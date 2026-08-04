@@ -44,7 +44,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import RevoGrid from '@revolist/vue3-datagrid';
 import type { PivotConfig } from '@revolist/revogrid-enterprise';
-import { currentTheme, observeCurrentTheme } from '../../composables/useRandomData';
+import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,

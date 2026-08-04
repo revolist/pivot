@@ -1,0 +1,26 @@
+{
+  "$schema": "./feature.schema.json",
+  "slug": "pivot",
+  "title": "RevoGrid Pivot",
+  "summary": "Multidimensional analytics with configurable fields, drill-down, totals, filtering, charts, and high-performance grid rendering.",
+  "edition": "Pro Advanced",
+  "repositoryUrl": "https://github.com/revolist/pivot",
+  "productUrl": "https://rv-grid.com/pivot/",
+  "trialUrl": "https://pro.rv-grid.com/guides/installation-npm-trial/",
+  "pricingUrl": "https://rv-grid.com/pricing/",
+  "liveDemoUrl": "https://example.rv-grid.com/pivot/demo/",
+  "frameworks": ["ts", "react", "vue", "angular"],
+  "recipes": [
+    { "id": "basic-pivot", "title": "Basic pivot model", "summary": "Start with rows, columns, values, and standard aggregations.", "path": "recipes/basic-pivot.ts" },
+    { "id": "fields-filters-totals", "title": "Fields, filters, and totals", "summary": "Expose configurable dimensions, filter selections, subtotals, and grand totals.", "path": "recipes/fields-filters-totals.ts" },
+    { "id": "charts-formatting", "title": "Charts and conditional formatting", "summary": "Connect pivot chart rendering and heatmap column types to the analytical result.", "path": "recipes/charts-formatting.ts" }
+  ],
+  "media": {
+    "poster": "assets/pivot-walkthrough-poster.webp",
+    "walkthroughGif": "assets/pivot-walkthrough.gif",
+    "walkthroughMp4": "assets/pivot-walkthrough.mp4",
+    "screenshots": ["assets/screenshots/overview.webp", "assets/screenshots/workflow.webp", "assets/screenshots/details.webp", "assets/screenshots/result.webp"]
+  },
+  "demoOutput": "dist"
+}
+

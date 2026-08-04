@@ -13,7 +13,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { RevoGrid, type DataType } from '@revolist/angular-datagrid';
 import type { PivotConfig } from '@revolist/revogrid-enterprise';
-import { currentTheme, observeCurrentTheme } from '../../composables/useRandomData';
+import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,

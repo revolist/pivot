@@ -1,12 +1,23 @@
-# Advanced Financial Pivot
+<div align="center">
 
-An Enterprise financial-analysis demo that combines RevoGrid Pivot with Pro grid plugins across Vanilla TypeScript, React, Vue, and Angular.
+# RevoGrid Pivot
 
-## Demo preview
+**Multidimensional analytics embedded directly in your application.**
 
-[![Advanced Financial Pivot walkthrough](./assets/pro-advanced-pivot-walkthrough.gif)](./assets/pro-advanced-pivot-walkthrough.mp4)
+[![CI](https://github.com/revolist/pivot/actions/workflows/ci.yml/badge.svg)](https://github.com/revolist/pivot/actions/workflows/ci.yml)
+[![Frameworks](https://img.shields.io/badge/TypeScript%20%7C%20React%20%7C%20Vue%20%7C%20Angular-4f46e5)](#framework-examples)
+[![License: MIT](https://img.shields.io/badge/Example%20license-MIT-16a34a.svg)](./LICENSE)
 
-_Click the animated preview to open the full-quality MP4._
+[View live demo](https://example.rv-grid.com/pivot/demo/) · [Request trial](https://pro.rv-grid.com/guides/installation-npm-trial/) · [Get Pro Advanced](https://rv-grid.com/pricing/)
+
+[![RevoGrid Pivot walkthrough](./assets/pivot-walkthrough.gif)](./assets/pivot-walkthrough.mp4)
+
+_Open the animation for the full-quality MP4 walkthrough._
+
+</div>
+
+This production-style financial analysis workspace combines RevoGrid Pivot and
+Pro grid plugins across Vanilla TypeScript, React, Vue, and Angular.
 
 ## What it features
 
@@ -54,9 +65,27 @@ Every directly registered item below comes from `@revolist/revogrid-pro`.
 
 Currency, number, and integer formatting comes from `@revolist/revogrid-column-numeral`; the Pro heatmap column types add value-intensity coloring on top. Pivot requires an Enterprise entitlement, while the supporting grid features require Pro functionality.
 
+## Recipes
+
+| Recipe | What it demonstrates |
+| --- | --- |
+| [`basic-pivot.ts`](./recipes/basic-pivot.ts) | A compact rows, columns, values, and totals model. |
+| [`fields-filters-totals.ts`](./recipes/fields-filters-totals.ts) | Runtime configurator, selection filters, subtotals, and grand totals. |
+| [`charts-formatting.ts`](./recipes/charts-formatting.ts) | Linked charts and heatmap-backed column types. |
+
+## Framework examples
+
+| Framework | Entry point | Command |
+| --- | --- | --- |
+| Vanilla TypeScript | [`src/pivot.ts`](./src/pivot.ts) | `pnpm dev` |
+| React | [`src/pivot.react.tsx`](./src/pivot.react.tsx) | `pnpm dev:react` |
+| Vue 3 | [`src/pivot.vue`](./src/pivot.vue) | `pnpm dev:vue` |
+| Angular | [`src/pivot.angular.ts`](./src/pivot.angular.ts) | `pnpm dev:angular` |
+
 ## Run it
 
 ```bash
+pnpm install
 pnpm dev          # Vanilla TypeScript
 pnpm dev:react
 pnpm dev:vue
@@ -64,6 +93,18 @@ pnpm dev:angular
 ```
 
 Build variants use the matching `build:ts`, `build:react`, `build:vue`, and `build:angular` scripts.
+
+Trial users must authenticate with the registry described in the [official
+trial installation guide](https://pro.rv-grid.com/guides/installation-npm-trial/).
+No registry token belongs in this repository. Licensed users can replace the two
+trial aliases in `package.json` with the matching full Pro/Enterprise packages;
+source imports remain unchanged.
+
+## License
+
+The examples, recipes, tests, documentation, and media tooling are MIT licensed.
+RevoGrid Pro and Enterprise packages are separate commercial dependencies and
+are not covered by this repository's MIT license.
 
 ## Main files
 
