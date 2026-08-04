@@ -100,6 +100,15 @@ No registry token belongs in this repository. Licensed users can replace the two
 trial aliases in `package.json` with the matching full Pro/Enterprise packages;
 source imports remain unchanged.
 
+## Workflow screenshots
+
+| Overview | Primary workflow |
+| --- | --- |
+| ![Pivot overview](./assets/screenshots/overview.webp) | ![Pivot workflow](./assets/screenshots/workflow.webp) |
+| ![Pivot details](./assets/screenshots/details.webp) | ![Pivot result](./assets/screenshots/result.webp) |
+
+[Download the walkthrough poster](./assets/pivot-walkthrough-poster.webp).
+
 ## License
 
 The examples, recipes, tests, documentation, and media tooling are MIT licensed.
