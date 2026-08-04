@@ -4,7 +4,6 @@
 
 **Multidimensional analytics embedded directly in your application.**
 
-[![Pages](https://github.com/revolist/pivot/actions/workflows/pages.yml/badge.svg)](https://pivot.rv-grid.com/)
 [![Frameworks](https://img.shields.io/badge/TypeScript%20%7C%20React%20%7C%20Vue%20%7C%20Angular-4f46e5)](#framework-examples)
 [![License: MIT](https://img.shields.io/badge/Example%20license-MIT-16a34a.svg)](./LICENSE)
 
