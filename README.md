@@ -1,6 +1,6 @@
 <div align="center">
 
-# RevoGrid Pivot
+# RevoGrid JavaScript Pivot Table Component
 
 **Multidimensional analytics embedded directly in your application.**
 
@@ -13,8 +13,8 @@
 
 </div>
 
-This production-style financial analysis workspace combines RevoGrid Pivot and
-Pro grid plugins across Vanilla TypeScript, React, Vue, and Angular.
+This production-style financial analysis workspace combines the RevoGrid Pivot
+Table component and Pro grid plugins across Vanilla TypeScript, React, Vue, and Angular.
 
 ## What it features
 
@@ -26,6 +26,8 @@ Pro grid plugins across Vanilla TypeScript, React, Vue, and Angular.
 - Dimension sorting, text/number/selection filters, and header filter controls
 - Currency, numeric, integer, and heatmap column types
 - Linked Pivot charts created from the body-cell context menu
+- Saved Pivot layout state shared by the Vue, Angular, React, and Vanilla TypeScript examples
+- A custom P90 aggregation available for currency measures in the field configurator
 - Responsive configurator, preset controls, and expanded view
 
 ## Pro features
@@ -45,6 +47,7 @@ Pro grid plugins across Vanilla TypeScript, React, Vue, and Angular.
 | `RowSelectPlugin` | Enables checkbox-based row selection for workflows that need to act on selected pivot rows. |
 | `SameValueMergePlugin` | Hides repeated adjacent row-axis labels, making Country, Segment, and Product groupings easier to scan. |
 | `commonAggregators` | Supplies the standard sum, average, minimum, and maximum calculations used by the financial dimensions and presets. |
+| Pivot state helpers | Restore versioned user configuration in every framework example while rehydrating runtime functions. |
 | `mergeCellProperties` | Composes heatmap styling with existing cell properties, so value intensity cues do not overwrite other pivot styling. |
 
 The demo configures `PivotPlugin` with three reusable financial presets, sortable dimensions, selectable filters, expanded or collapsed row groups, column-group totals, and sum, average, minimum, or maximum value choices.

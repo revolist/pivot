@@ -1,25 +1,23 @@
+@use '../../../styles/scheduler-button' as demo-controls;
+
 .financial-pivot-showcase {
   --financial-pivot-expanded-background: var(--sl-color-bg, #ffffff);
 }
 
-:where(.dark, [data-theme='dark']) .financial-pivot-showcase {
+:where(.dark, [data-theme^='dark']) .financial-pivot-showcase {
   --financial-pivot-expanded-background: var(--rv-ui-surface-sunken);
 }
 
 financial-pivot-header {
   --financial-header-text: #0f172a;
-  --financial-header-button-border: #cbd5e1;
-  --financial-header-button-hover: #f1f5f9;
 
   display: block;
   width: 100%;
   color: var(--financial-header-text);
 }
 
-:where(.dark, [data-theme='dark']) financial-pivot-header {
+:where(.dark, [data-theme^='dark']) financial-pivot-header {
   --financial-header-text: var(--rv-ui-text);
-  --financial-header-button-border: var(--rv-ui-border-strong);
-  --financial-header-button-hover: var(--rv-ui-surface-hover);
   --rv-segmented-bg: var(--rv-ui-surface-sunken);
   --rv-segmented-border: var(--rv-ui-border);
   --rv-segmented-item-color: var(--rv-ui-text-muted);
@@ -67,16 +65,5 @@ financial-pivot-header {
 }
 
 .financial-pivot-header__button {
-  padding: 4px 12px;
-  border: 1px solid var(--financial-header-button-border);
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-}
-
-.financial-pivot-header__button:hover {
-  background: var(--financial-header-button-hover);
+  @include demo-controls.scheduler-button;
 }

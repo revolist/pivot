@@ -41,10 +41,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import RevoGrid from '@revolist/vue3-datagrid';
 import type { PivotConfig } from '@revolist/revogrid-enterprise';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
+import {
+  persistPivotState,
+  restoreActivePreset,
+  restorePivotConfig,
+} from './financial.analytics';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -67,7 +72,8 @@ defineFinancialPivotHeaderElement();
 const isDark = ref(currentTheme().isDark());
 let disconnectTheme: (() => void) | undefined;
 const props = defineProps({ rows: { type: Array<any>, default: () => [] } });
-const rows = ref(resolveFinancialRows(props.rows));
+const initialRows = resolveFinancialRows(props.rows);
+const rows = shallowRef(initialRows);
 const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
 
 onMounted(() => {
@@ -77,8 +83,8 @@ onMounted(() => {
 });
 onBeforeUnmount(() => disconnectTheme?.());
 
-const pivotConfig = shallowRef<PivotConfig>(createFinancialPreset());
-const activePreset = ref<FinancialPresetId>('sales');
+const activePreset = ref<FinancialPresetId>(restoreActivePreset());
+const pivotConfig = shallowRef<PivotConfig>(restorePivotConfig(activePreset.value));
 const configuratorVisible = ref(!isSmallScreen());
 const expanded = ref(false);
 const gridElement = ref<HTMLRevoGridElement>();
@@ -89,6 +95,11 @@ const headerState = computed<FinancialPivotHeaderState>(() => ({
   configuratorVisible: configuratorVisible.value,
   expanded: expanded.value,
 }));
+watch(
+  [pivotConfig, activePreset],
+  ([config, preset]) => persistPivotState(config, preset),
+  { immediate: true },
+);
 
 const pivot = computed(() =>
   applyFinancialPivotOptions(
