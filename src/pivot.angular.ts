@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   ElementRef,
+  effect,
   Input,
   NO_ERRORS_SCHEMA,
   OnDestroy,
@@ -10,10 +11,14 @@ import {
   ViewChild,
   ViewEncapsulation,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RevoGrid, type DataType } from '@revolist/angular-datagrid';
 import type { PivotConfig } from '@revolist/revogrid-enterprise';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
+import {
+  persistPivotState,
+  restoreActivePreset,
+  restorePivotConfig,
+} from './financial.analytics';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -38,7 +43,7 @@ const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('
 @Component({
   selector: 'pivot-showcase-grid',
   standalone: true,
-  imports: [RevoGrid, CommonModule],
+  imports: [RevoGrid],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./financial-pivot-header/financial-pivot-header.scss'],
@@ -72,7 +77,7 @@ const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('
             [filter]="true"
             [multiRowHeader]="multiRowHeader"
             [colSize]="180"
-            [source]="rows"
+            [source]="sourceRows()"
             [columns]="FINANCIAL_COLUMNS"
             [pivot]="pivot()"
             [pivotCharts]="pivotCharts"
@@ -89,7 +94,14 @@ const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('
   `,
 })
 export class PivotShowcaseGridComponent implements OnDestroy {
-  @Input() rows: DataType[] = resolveFinancialRows();
+  private benchmarkSource: DataType[] = resolveFinancialRows();
+  readonly sourceRows = signal<DataType[]>(this.benchmarkSource);
+
+  @Input() set rows(value: DataType[]) {
+    this.benchmarkSource = resolveFinancialRows(value);
+    this.sourceRows.set(this.benchmarkSource);
+  }
+
   @ViewChild('gridElement', { read: ElementRef })
   gridElement?: ElementRef<HTMLRevoGridElement & { pivot?: PivotConfig }>;
 
@@ -103,10 +115,14 @@ export class PivotShowcaseGridComponent implements OnDestroy {
   readonly theme = computed(() => this.isDark() ? 'darkCompact' : 'compact');
   private readonly disconnectTheme = observeCurrentTheme((value) => this.isDark.set(value));
 
-  readonly pivotSignal = signal<PivotConfig>(createFinancialPreset());
-  readonly activePreset = signal<FinancialPresetId>('sales');
+  readonly activePreset = signal<FinancialPresetId>(restoreActivePreset());
+  readonly pivotSignal = signal<PivotConfig>(restorePivotConfig(this.activePreset()));
   readonly configuratorVisible = signal(!isSmallScreen());
   readonly expanded = signal(false);
+
+  constructor() {
+    effect(() => persistPivotState(this.pivotSignal(), this.activePreset()));
+  }
 
   get headerState(): FinancialPivotHeaderState {
     return {
@@ -118,7 +134,7 @@ export class PivotShowcaseGridComponent implements OnDestroy {
 
   readonly pivot = computed(() => applyFinancialPivotOptions(
     this.pivotSignal(),
-    this.rows,
+    this.sourceRows(),
     this.configuratorVisible(),
   ));
 

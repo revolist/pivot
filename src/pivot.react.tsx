@@ -12,6 +12,11 @@ import type { PivotConfig } from '@revolist/revogrid-enterprise';
 import './financial-pivot-header/financial-pivot-header.scss';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
+  persistPivotState,
+  restoreActivePreset,
+  restorePivotConfig,
+} from './financial.analytics';
+import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
   FINANCIAL_MULTI_ROW_HEADER,
@@ -53,9 +58,10 @@ const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('
 
 function PivotShowcase({ rows }: PivotProps) {
   const [isDark, setIsDark] = useState(() => currentTheme().isDark());
-  const data = useMemo(() => resolveFinancialRows(rows), [rows]);
-  const [pivotConfig, setPivotConfig] = useState<PivotConfig>(() => createFinancialPreset());
-  const [activePreset, setActivePreset] = useState<FinancialPresetId>('sales');
+  const initialData = useMemo(() => resolveFinancialRows(rows), [rows]);
+  const [data, setData] = useState<DataType[]>(initialData);
+  const [activePreset, setActivePreset] = useState<FinancialPresetId>(restoreActivePreset);
+  const [pivotConfig, setPivotConfig] = useState<PivotConfig>(() => restorePivotConfig(activePreset));
   const [configuratorVisible, setConfiguratorVisible] = useState(() => !isSmallScreen());
   const [expanded, setExpanded] = useState(false);
 
@@ -70,6 +76,14 @@ function PivotShowcase({ rows }: PivotProps) {
   const headerRef = useRef<FinancialPivotHeaderElement>(null);
 
   useEffect(() => observeCurrentTheme(setIsDark), []);
+
+  useEffect(() => {
+    setData(initialData);
+  }, [initialData]);
+
+  useEffect(() => {
+    persistPivotState(pivotConfig, activePreset);
+  }, [activePreset, pivotConfig]);
 
   useEffect(() => {
     const grid = gridRef.current;

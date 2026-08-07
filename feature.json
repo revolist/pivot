@@ -2,7 +2,7 @@
   "$schema": "./feature.schema.json",
   "slug": "pivot",
   "title": "RevoGrid Pivot",
-  "summary": "Multidimensional analytics with configurable fields, drill-down, totals, filtering, charts, and high-performance grid rendering.",
+  "summary": "A JavaScript Pivot Table component with configurable fields, drill-down, totals, filtering, charts, and high-performance grid rendering.",
   "edition": "Pro Advanced",
   "repositoryUrl": "https://github.com/revolist/pivot",
   "productUrl": "https://rv-grid.com/pivot/",

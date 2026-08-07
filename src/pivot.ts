@@ -3,6 +3,11 @@ import type { PivotConfig } from '@revolist/revogrid-enterprise';
 import './financial-pivot-header/financial-pivot-header.scss';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
+  persistPivotState,
+  restoreActivePreset,
+  restorePivotConfig,
+} from './financial.analytics';
+import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
   FINANCIAL_MULTI_ROW_HEADER,
@@ -31,8 +36,8 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
 
   const { isDark } = currentTheme();
   const data = resolveFinancialRows(Array.isArray(rows) ? rows : undefined);
-  let pivotConfig: PivotConfig = createFinancialPreset();
-  let activePreset: FinancialPresetId = 'sales';
+  let activePreset: FinancialPresetId = restoreActivePreset();
+  let pivotConfig: PivotConfig = restorePivotConfig(activePreset);
   let configuratorVisible = !isSmallScreen();
   let expanded = false;
 
@@ -49,7 +54,7 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
   scrollContainer.className = 'grow min-h-0 overflow-auto';
   const gridContainer = document.createElement('div');
   gridContainer.className = 'pivot-grid-container h-full overflow-hidden';
-  let grid: any;
+  let grid: HTMLRevoGridElement;
 
   function applyPivotOptions() {
     grid.pivot = applyFinancialPivotOptions(
@@ -73,6 +78,7 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
 
   const onPivotConfigUpdate = (event: CustomEvent<PivotConfig>) => {
     pivotConfig = event.detail || createFinancialPreset();
+    persistPivotState(pivotConfig, activePreset);
     refreshLayout();
   };
   function initializeGrid() {
@@ -112,6 +118,7 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
     const id = (event as CustomEvent<FinancialPresetId>).detail;
     pivotConfig = createFinancialPreset(id);
     activePreset = id;
+    persistPivotState(pivotConfig, activePreset);
     refreshLayout();
     replacePivotOptions();
   });
@@ -129,6 +136,7 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
   parent.appendChild(container);
   refreshLayout();
   initializeGrid();
+  persistPivotState(pivotConfig, activePreset);
   const disconnectTheme = observeCurrentTheme((darkTheme) => {
     grid.theme = darkTheme ? 'darkCompact' : 'compact';
   });

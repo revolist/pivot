@@ -38,11 +38,18 @@ export const FINANCIAL_COLUMN_TYPES = {
   cogsHeatmap: createFinancialHeatmapColumnType('COGS', 'currency'),
 };
 
+const percentile90 = (values: any[]) => {
+  if (!values.length) return 0;
+  const sorted = values.map(Number).sort((left, right) => left - right);
+  return sorted[Math.ceil(sorted.length * 0.9) - 1] ?? 0;
+};
+
 const currencyAggregators = {
   sum: commonAggregators.sum,
   avg: commonAggregators.avg,
   min: commonAggregators.min,
   max: commonAggregators.max,
+  p90: percentile90,
 };
 
 const numberAggregators = {

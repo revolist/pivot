@@ -2,7 +2,7 @@
   "name": "@revolist/pivot-showcase",
   "version": "1.0.0",
   "private": true,
-  "description": "RevoGrid Pivot showcase with multidimensional analytics and four framework integrations.",
+  "description": "RevoGrid JavaScript Pivot Table component showcase with multidimensional analytics and four framework integrations.",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@10.13.1",
