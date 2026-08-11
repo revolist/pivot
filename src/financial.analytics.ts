@@ -3,7 +3,7 @@ import {
   parsePivotStateJson,
   serializePivotStateJson,
   type PivotConfig,
-} from '@revolist/revogrid-enterprise';
+} from '@revolist/pivot';
 import {
   createFinancialPreset,
   type FinancialPresetId,

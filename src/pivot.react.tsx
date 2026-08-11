@@ -8,7 +8,7 @@ import {
   type HTMLAttributes,
 } from 'react';
 import { RevoGrid, type DataType } from '@revolist/react-datagrid';
-import type { PivotConfig } from '@revolist/revogrid-enterprise';
+import type { PivotConfig } from '@revolist/pivot';
 import './financial-pivot-header/financial-pivot-header.scss';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {

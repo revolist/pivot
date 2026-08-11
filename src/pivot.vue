@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import RevoGrid from '@revolist/vue3-datagrid';
-import type { PivotConfig } from '@revolist/revogrid-enterprise';
+import type { PivotConfig } from '@revolist/pivot';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
   persistPivotState,

@@ -11,7 +11,7 @@ import {
   PivotPlugin,
   type PivotChartsConfig,
   type PivotChartsUiConfig,
-} from '@revolist/revogrid-enterprise';
+} from '@revolist/pivot';
 import {
   AdvanceFilterPlugin,
   ColumnCollapsePlugin,

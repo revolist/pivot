@@ -12,7 +12,7 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { RevoGrid, type DataType } from '@revolist/angular-datagrid';
-import type { PivotConfig } from '@revolist/revogrid-enterprise';
+import type { PivotConfig } from '@revolist/pivot';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
   persistPivotState,

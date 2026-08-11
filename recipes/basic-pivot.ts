@@ -1,4 +1,4 @@
-import type { PivotConfig } from '@revolist/revogrid-enterprise';
+import type { PivotConfig } from '@revolist/pivot';
 import { FINANCIAL_DIMENSIONS } from '../src/financial.pivot';
 
 const fields = new Set(['Country', 'Segment', 'Year', 'Sales']);
@@ -10,4 +10,3 @@ export const basicPivotRecipe: PivotConfig = {
   values: [{ prop: 'Sales', aggregator: 'sum' }],
   totals: { subtotals: true, grandTotal: true },
 };
-
