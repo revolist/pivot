@@ -38,6 +38,9 @@ importers:
       '@revolist/revogrid-column-numeral':
         specifier: 2.0.11
         version: 2.0.11
+      '@revolist/revogrid-pro':
+        specifier: npm:@revolist/rv-pro-trial@2.6.3
+        version: '@revolist/rv-pro-trial@2.6.3'
       '@revolist/vue3-datagrid':
         specifier: 4.25.1
         version: 4.25.1
