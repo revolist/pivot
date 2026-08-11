@@ -102,6 +102,7 @@ for (const relative of verifyMedia ? [media.walkthroughGif, media.walkthroughMp4
 const forbidden = [
   '../../composables/',
   '../../demo-host.css',
+  '../../../styles/',
   '../../../../packages/',
   '"latest"',
 ];
@@ -111,7 +112,7 @@ async function walk(directory) {
     if (['.git', 'node_modules', 'dist', '.artifacts'].includes(entry.name)) continue;
     const path = join(directory, entry.name);
     if (entry.isDirectory()) await walk(path);
-    else if (['.ts', '.tsx', '.vue', '.json', '.md', '.yml', '.yaml'].includes(extname(entry.name)) || entry.name === 'package.json') {
+    else if (['.ts', '.tsx', '.vue', '.scss', '.json', '.md', '.yml', '.yaml'].includes(extname(entry.name)) || entry.name === 'package.json') {
       const source = await readFile(path, 'utf8');
       for (const value of forbidden) if (source.includes(value)) failures.push(`${path.slice(root.length + 1)}: contains forbidden coupling ${value}`);
     }

@@ -1,4 +1,4 @@
-@use '../../../styles/scheduler-button' as demo-controls;
+@use '../../styles/demo-button' as demo-controls;
 
 .financial-pivot-showcase {
   --financial-pivot-expanded-background: var(--sl-color-bg, #ffffff);
@@ -65,5 +65,5 @@ financial-pivot-header {
 }
 
 .financial-pivot-header__button {
-  @include demo-controls.scheduler-button;
+  @include demo-controls.demo-button;
 }
