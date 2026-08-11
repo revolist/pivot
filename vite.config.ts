@@ -8,6 +8,18 @@ export default defineConfig(({ mode }) => ({
   base: './',
   resolve: {
     alias: {
+      './pivot-entry': fileURLToPath(
+        new URL(
+          mode === 'react'
+            ? './src/pivot-entry.react.tsx'
+            : mode === 'vue'
+              ? './src/pivot-entry.vue.ts'
+              : mode === 'angular'
+                ? './src/pivot-entry.angular.ts'
+                : './src/pivot-entry.ts',
+          import.meta.url,
+        ),
+      ),
       ...(mode === 'test'
         ? {
             '@revolist/revogrid-column-date': fileURLToPath(
