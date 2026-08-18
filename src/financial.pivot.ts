@@ -16,6 +16,7 @@ import {
   AdvanceFilterPlugin,
   ColumnCollapsePlugin,
   ContextMenuPlugin,
+  FilterHeaderPlugin,
   MultiRowHeaderPlugin,
   RowOddPlugin,
   RowSelectPlugin,
@@ -158,6 +159,7 @@ export const FINANCIAL_SHOWCASE_PLUGINS: GridPlugin[] = [
   ColumnCollapsePlugin,
   MultiRowHeaderPlugin,
   AdvanceFilterPlugin,
+  FilterHeaderPlugin,
   RowOddPlugin,
 ] as GridPlugin[];
 
