@@ -1,109 +1,118 @@
 <div align="center">
 
-# RevoGrid JavaScript Pivot Table Component
+# RevoGrid Pivot
 
-**Multidimensional analytics embedded directly in your application.**
-
-[![Frameworks](https://img.shields.io/badge/TypeScript%20%7C%20React%20%7C%20Vue%20%7C%20Angular-4f46e5)](#framework-examples)
-[![License: MIT](https://img.shields.io/badge/Example%20license-MIT-16a34a.svg)](./LICENSE)
-
-[View live demo](https://pivot.rv-grid.com/demo/) · [Request trial](https://pro.rv-grid.com/guides/installation-npm-trial/) · [Get Pro Advanced](https://rv-grid.com/pricing/)
+[View live demo](https://pivot.rv-grid.com/demo/) · [Get Pro Advanced](https://rv-grid.com/pricing/)
 
 [![RevoGrid Pivot walkthrough](./assets/pivot-walkthrough.gif)](./assets/pivot-walkthrough.mp4)
 
 </div>
 
-This production-style financial analysis workspace combines the RevoGrid Pivot
-Table component and Pro grid plugins across Vanilla TypeScript, React, Vue, and Angular.
+RevoGrid Pivot is a JavaScript pivot table component for embedded analytics.
+Turn application data or remote analytical results into interactive dimensions,
+aggregations, drill-down views, totals, and linked charts while retaining
+RevoGrid's virtualized rendering and extension model.
 
-## What it features
+## Key capabilities
 
-- Configurable row, column, value, and filter dimensions
-- Sales, profitability, and product-performance presets
-- Sum, average, minimum, and maximum aggregations
-- Expand/collapse drill-down, parent-row aggregations, and grand totals
-- Collapsible pivot column groups and multi-row headers
-- Dimension sorting, text/number/selection filters, and header filter controls
-- Currency, numeric, integer, and heatmap column types
-- Linked Pivot charts created from the body-cell context menu
-- Saved Pivot layout state shared by the Vue, Angular, React, and Vanilla TypeScript examples
-- A custom P90 aggregation available for currency measures in the field configurator
-- Responsive configurator, preset controls, and expanded view
+- Configure reusable row, column, value, and filter dimensions
+- Aggregate measures with sum, average, minimum, maximum, and custom functions
+- Expand and collapse hierarchical groups with subtotals and grand totals
+- Filter and sort dimensions directly from generated Pivot headers
+- Build linked Pivot charts with a first-party renderer or a headless integration
+- Apply conditional formatting and custom column types to analytical values
+- Save and restore versioned Pivot layouts and user configuration
+- Run locally in the browser or connect the same public configuration model to a server-side analytical engine
 
-## Pro features
+## Installation
 
-| Plugin or API | How this demo uses it and why it helps |
-| --- | --- |
-| `PivotPlugin` | Builds the pivot model and configurator, turns dimensions into row and column axes, supports drill-down, and produces parent-row aggregations and grand totals. This lets users reshape the same financial data without a new report. |
-| `PivotChartsPlugin` | Projects the active Pivot result into renderer-neutral linked chart data. |
-| `PivotChartsUiPlugin` | Adds the modeless chart dialog and contributes the Create chart action to the body-cell context menu. |
-| `filterPivotSource` | Applies active pivot filter selections before modeling and expanding the initial row groups. |
-| `AdvanceFilterPlugin` | Adds selection, text, and numeric filter choices to pivot dimensions so users can isolate a market, product, period, or value range. |
-| `ColumnCollapsePlugin` | Collapses generated period or market column groups into aggregate placeholder columns, preserving useful totals while saving width. |
-| `ContextMenuPlugin` | Hosts the Pivot Charts contribution so a chart can be created directly from a Pivot body cell. |
-| `FilterHeaderPlugin` | Places filter controls in the generated headers so filtering stays close to the data being analyzed. |
-| `MultiRowHeaderPlugin` | Renders the pivot's nested column groups as clear multi-level headers instead of a flat, ambiguous label row. |
-| `RowOddPlugin` | Adds stable row striping hooks that improve readability across dense pivot output. |
-| `RowSelectPlugin` | Enables checkbox-based row selection for workflows that need to act on selected pivot rows. |
-| `SameValueMergePlugin` | Hides repeated adjacent row-axis labels, making Country, Segment, and Product groupings easier to scan. |
-| `commonAggregators` | Supplies the standard sum, average, minimum, and maximum calculations used by the financial dimensions and presets. |
-| Pivot state helpers | Restore versioned user configuration in every framework example while rehydrating runtime functions. |
-| `mergeCellProperties` | Composes heatmap styling with existing cell properties, so value intensity cues do not overwrite other pivot styling. |
+### Free trial
 
-The demo configures `PivotPlugin` with three reusable financial presets, sortable dimensions, selectable filters, expanded or collapsed row groups, column-group totals, and sum, average, minimum, or maximum value choices.
+The public trial registry requires no token or login. Configure it for this
+project and install the trial packages under the production import names:
 
-`ColumnCollapsePlugin` automatically installs `ColumnGroupRenderSyncPlugin`. The companion keeps generated pivot-group header indexes correct as aggregate columns are collapsed or expanded; it does not need to be added to `FINANCIAL_SHOWCASE_PLUGINS`.
+```bash
+pnpm config set @revolist:registry https://trial.rv-grid.com --location=project
+pnpm i @revolist/revogrid-pro@npm:@revolist/rv-pro-trial@2.7.10 @revolist/pivot@npm:@revolist/pivot-trial@2.7.10
+```
 
-`SameValueMergePlugin` can automatically install `StickyCellsPlugin` for columns that opt into sticky same-value merging. This pivot uses normal same-value merging, so that optional companion is not installed here.
+### Pro
 
-Currency, number, and integer formatting comes from `@revolist/revogrid-column-numeral`; the heatmap column types add value-intensity coloring on top.
+Paid users can remove the trial registry override and install the licensed
+packages. Source imports stay unchanged.
 
-## Recipes
+```bash
+pnpm config delete @revolist:registry --location=project
+pnpm i @revolist/revogrid-pro@2.7.10 @revolist/pivot@2.7.10
+```
 
-| Recipe | What it demonstrates |
-| --- | --- |
-| [`basic-pivot.ts`](./recipes/basic-pivot.ts) | A compact rows, columns, values, and totals model. |
-| [`fields-filters-totals.ts`](./recipes/fields-filters-totals.ts) | Runtime configurator, selection filters, subtotals, and grand totals. |
-| [`charts-formatting.ts`](./recipes/charts-formatting.ts) | Linked charts and heatmap-backed column types. |
+## Quick start
 
-## Framework examples
+```ts
+import { defineCustomElements } from '@revolist/revogrid/loader';
+import { PivotPlugin, type PivotConfig } from '@revolist/pivot';
+import '@revolist/pivot/styles.css';
 
-| Framework | Entry point | Command |
+defineCustomElements();
+
+const pivot: PivotConfig = {
+  rows: ['country'],
+  columns: ['year'],
+  values: [{ prop: 'sales', aggregator: 'sum' }],
+  hasConfigurator: true,
+};
+
+const grid = document.createElement('revo-grid');
+grid.plugins = [PivotPlugin];
+grid.pivot = pivot;
+document.querySelector('#app')?.appendChild(grid);
+grid.source = [
+  { country: 'Portugal', year: 2025, sales: 125000 },
+  { country: 'Portugal', year: 2026, sales: 148000 },
+  { country: 'Spain', year: 2026, sales: 171000 },
+];
+```
+
+## Framework integrations
+
+The component uses the same configuration model across supported frameworks.
+
+| Framework | Integration source | Start command |
 | --- | --- | --- |
 | Vanilla TypeScript | [`src/pivot.ts`](./src/pivot.ts) | `pnpm dev` |
 | React | [`src/pivot.react.tsx`](./src/pivot.react.tsx) | `pnpm dev:react` |
 | Vue 3 | [`src/pivot.vue`](./src/pivot.vue) | `pnpm dev:vue` |
 | Angular | [`src/pivot.angular.ts`](./src/pivot.angular.ts) | `pnpm dev:angular` |
 
-## Run it
+Build all integrations with `pnpm build:frameworks`.
+
+## Run the examples
+
+Clone the component repository, follow either the **Free trial** or **Pro**
+installation above, and start the framework you want to inspect:
 
 ```bash
-pnpm install
-pnpm dev          # Vanilla TypeScript
-pnpm dev:react
-pnpm dev:vue
-pnpm dev:angular
+git clone https://github.com/revolist/pivot.git
+cd pivot
+pnpm dev
 ```
 
-Build variants use the matching `build:ts`, `build:react`, `build:vue`, and `build:angular` scripts.
+Open [http://localhost:5173/](http://localhost:5173/) for the Vanilla TypeScript
+version. Use `pnpm dev:react`, `pnpm dev:vue`, or `pnpm dev:angular` for the
+matching framework integration. The complete financial-analysis implementation
+starts in [`src/pivot.ts`](./src/pivot.ts), with the other framework entry points
+linked in the table above. You can also open the [hosted Pivot
+example](https://pivot.rv-grid.com/demo/) without running the repository.
 
-Trial users must authenticate with the registry described in the [official
-trial installation guide](https://pro.rv-grid.com/guides/installation-npm-trial/).
-No registry token belongs in this repository. Licensed users can replace the two
-trial aliases in `package.json` with the matching licensed RevoGrid packages;
-source imports remain unchanged.
+## Resources
+
+- [Pivot documentation](https://pro.rv-grid.com/guides/pivot/)
+- [Pivot configuration reference](https://pro.rv-grid.com/guides/pivot/concepts/configuration-reference)
+- [Server-side Pivot](https://pro.rv-grid.com/guides/pivot/server-side/server-side)
+- [Trial installation guide](https://pro.rv-grid.com/guides/installation-npm-trial/)
 
 ## License
 
-The examples, recipes, tests, documentation, and media tooling are MIT licensed.
-Commercial RevoGrid packages are not covered by this repository's MIT license.
-
-## Main files
-
-- `src/pivot.ts` — Vanilla TypeScript
-- `src/pivot.react.tsx` — React
-- `src/pivot.vue` — Vue
-- `src/pivot.angular.ts` — Angular
-- `src/financial.pivot.ts` — dimensions, presets, aggregations, and plugin configuration
-- `src/financial-pivot-header/` — standalone report controls
-- `src/financial-dataset.ts` — financial source data
+The integration source and supporting assets in this repository are MIT
+licensed. RevoGrid Pro and RevoGrid Pivot are commercial packages distributed
+under the license supplied with your subscription.
