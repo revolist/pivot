@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { basicPivotRecipe } from './basic-pivot';
-import { createFieldsFiltersTotalsRecipe } from './fields-filters-totals';
-import { chartsAndFormattingRecipe } from './charts-formatting';
+import { basicPivotRecipe } from '../../../recipes/basic-pivot';
+import { createFieldsFiltersTotalsRecipe } from '../../../recipes/fields-filters-totals';
+import { chartsAndFormattingRecipe } from '../../../recipes/charts-formatting';
 
 describe('Pivot recipes', () => {
   it('provides a minimal analytical model', () => {
