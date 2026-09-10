@@ -79,7 +79,13 @@ const FINANCIAL_DIMENSION_DEFINITIONS: PivotConfigDimension[] = [
     filter: ['string', 'selection'],
     filterOptions: [...MONTH_ORDER],
   },
-  { prop: 'Product', fieldGroup: 'Dimensions', sortable: true, filter: ['string', 'selection'] },
+  {
+    prop: 'Product',
+    fieldGroup: 'Dimensions',
+    sortable: true,
+    filter: ['string', 'selection'],
+    filterOptions: ['Apex Suite', 'Beacon Pro', 'Cobalt Cloud', 'Delta One', 'Evergreen'],
+  },
   {
     prop: 'Discount Band',
     fieldGroup: 'Dimensions',
