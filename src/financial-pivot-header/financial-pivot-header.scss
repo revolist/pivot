@@ -4,6 +4,16 @@
   --financial-pivot-expanded-background: var(--sl-color-bg, #ffffff);
 }
 
+.financial-pivot-showcase .pivot-config {
+  --pv-cfg-width: 304px;
+  overflow-x: hidden;
+}
+
+.financial-pivot-showcase .pivot-config > * {
+  min-width: 0;
+  width: 100%;
+}
+
 :where(.dark, [data-theme^='dark']) .financial-pivot-showcase {
   --financial-pivot-expanded-background: var(--rv-ui-surface-sunken);
 }
