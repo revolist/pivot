@@ -24,26 +24,26 @@ importers:
         specifier: 20.3.26
         version: 20.3.26(@angular/common@20.3.26(@angular/core@20.3.26(@angular/compiler@20.3.26)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/compiler@20.3.26)(@angular/core@20.3.26(@angular/compiler@20.3.26)(rxjs@7.8.2)(zone.js@0.15.1))(@angular/platform-browser@20.3.26(@angular/common@20.3.26(@angular/core@20.3.26(@angular/compiler@20.3.26)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.26(@angular/compiler@20.3.26)(rxjs@7.8.2)(zone.js@0.15.1)))
       '@revolist/angular-datagrid':
-        specifier: 4.27.0
-        version: 4.27.0
+        specifier: 4.28.0
+        version: 4.28.0
       '@revolist/pivot':
-        specifier: npm:@revolist/pivot-trial@2.9.1
-        version: '@revolist/pivot-trial@2.9.1'
+        specifier: npm:@revolist/pivot-trial@2.9.3
+        version: '@revolist/pivot-trial@2.9.3'
       '@revolist/react-datagrid':
-        specifier: 4.27.0
-        version: 4.27.0
+        specifier: 4.28.0
+        version: 4.28.0
       '@revolist/revogrid':
-        specifier: 4.27.6
-        version: 4.27.6
+        specifier: 4.28.0
+        version: 4.28.0
       '@revolist/revogrid-column-numeral':
         specifier: 2.0.11
         version: 2.0.11
       '@revolist/revogrid-pro':
-        specifier: npm:@revolist/rv-pro-trial@2.9.1
-        version: '@revolist/rv-pro-trial@2.9.1'
+        specifier: npm:@revolist/rv-pro-trial@2.9.3
+        version: '@revolist/rv-pro-trial@2.9.3'
       '@revolist/vue3-datagrid':
-        specifier: 4.27.0
-        version: 4.27.0
+        specifier: 4.28.0
+        version: 4.28.0
       react:
         specifier: 18.3.1
         version: 18.3.1
@@ -1270,32 +1270,26 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  '@revolist/angular-datagrid@4.27.0':
-    resolution: {integrity: sha512-U0L2lMt1Y8A6kN/Gnlc9Q5zpBOVUoTN8QKCIX+/b7KG+SrZISO5p3pyMN5/WAIAZiY0lHYJ/4VgcsdBFMunvKQ==}
+  '@revolist/angular-datagrid@4.28.0':
+    resolution: {integrity: sha512-1TYM9dCfmnZN8EUq/EvmpkqY8/5+ZbNMc4oSik5b7QgCwBrp+GvL0QBibXlE8fCR9ERR3Mi4q0tLE0txY18GAg==}
 
-  '@revolist/pivot-trial@2.9.1':
-    resolution: {integrity: sha512-H2eY7iWXMd1bRSZDWLQ4Ks4CmogS2QzlmQiS++FpglkvIAJo2LXizTn177Y1DHezYRIjLm/CokMCNihIzccngw==, tarball: https://trial.rv-grid.com/@revolist/pivot-trial/-/6ecdd82210ad63cfb6233e65746e8052fc9aa0d1}
+  '@revolist/pivot-trial@2.9.3':
+    resolution: {integrity: sha512-NqDaCqfRS8vpCW8rNOZKzn2pOSz+Ummm8mq26GumWdoZqbVc0pIcpogFNGy6eekB5P+SXvbVklhZkAjT2sWhTg==, tarball: https://trial.rv-grid.com/@revolist/pivot-trial/-/d17b05189fbbce4008b5ef8db6d1b30396534dda}
 
-  '@revolist/react-datagrid@4.27.0':
-    resolution: {integrity: sha512-gdJuMMFlPuwyl/lIdvp8RSuFGBeAzOSqft8f4CEBrp8PYtvKF/pNXsh+hn67qjkrHacx8HUDdJ9yEr4rp5p4cQ==}
+  '@revolist/react-datagrid@4.28.0':
+    resolution: {integrity: sha512-CAD2gdpcZ6ks6EICb2Wrow0TKBFvSQ59IOXcBu3SM/o/AudphwE/STK4BcDFw9hZFBHpkg84l+EC8lNPF0/StQ==}
 
   '@revolist/revogrid-column-numeral@2.0.11':
     resolution: {integrity: sha512-p0YzZZdS5xuLE2jwZxHXAPgvZt6/M/IcqzycpAqXuNaMgYQgb0tWXMCEfrkcqytKWw1WDBa1AboTFV+suVRRkg==}
 
-  '@revolist/revogrid@4.27.0':
-    resolution: {integrity: sha512-e8Ni/3/CV9zI8RQzjQd3rWUBHJA2YzoE99Lf22svuUBV38SMIP10SQgUk0385oE3SIl88cXcKXQjIXNNQZDHFQ==}
-
-  '@revolist/revogrid@4.27.6':
-    resolution: {integrity: sha512-PNRxT3plZ5q5QXEThCXxI53KXsKje2VtgOEY7nYM85Jt7KzU7KDOwQ+g20Z7MX+fseKML8vL2ExsyL3VaE1WkA==}
-
   '@revolist/revogrid@4.28.0':
     resolution: {integrity: sha512-Ir+QA69S7Qim4p+RGYPYMYVV9FvJaU+fudIMnR1yniSr6L4xPjDVkIldfLTHN+zHx2f9OKGn1aUUdPXEVuCJkA==}
 
-  '@revolist/rv-pro-trial@2.9.1':
-    resolution: {integrity: sha512-GZs+HfouUJ0BDblO2XMlPso3UfqT0wN64Bcqo2pDlbgwJOwDFsf64vqbyNnBI/dNMMS43TG+oxPib3E3usCgug==, tarball: https://trial.rv-grid.com/@revolist/rv-pro-trial/-/abf836055d319bb09524c4c2c7fd58dbc92e51fb}
+  '@revolist/rv-pro-trial@2.9.3':
+    resolution: {integrity: sha512-nfmmh5yG+C38D4+n5ImvpbsEP6oJUuBJhtSNiANV0oeeXuKlcTwcvh+mIqQrjObwbPd5Xn0eJVm6GUJrTfKUdA==, tarball: https://trial.rv-grid.com/@revolist/rv-pro-trial/-/0840053335d2abc6731435bd896251eaa4ff4ab5}
 
-  '@revolist/vue3-datagrid@4.27.0':
-    resolution: {integrity: sha512-v/jdCxofynMFXWu772oNgWY8WeaNml3w4ccp1LYjqkTcA+3MCU3NI9cACWaIiQi3hfyM4eiiV6ALlsh8NxhpLQ==}
+  '@revolist/vue3-datagrid@4.28.0':
+    resolution: {integrity: sha512-I9qFcL8eidbzykbSJmKxXL1IHhfekwNqrktTOL9TjipdQ73/KeOAbsPSNLlLT7s9BAzyPeLfHZZA/ySCHG1vEA==}
 
   '@rolldown/binding-android-arm64@1.2.3':
     resolution: {integrity: sha512-zrJtHDcaZJ1Fp7xf4hNl+7seH9Cn/N5TwLYkhgXREtBwAd/jaqW3uqeHxpDugJLVICWg4eW44kOQEGJ1r6jCGw==}
@@ -4516,41 +4510,37 @@ snapshots:
     dependencies:
       playwright: 1.59.1
 
-  '@revolist/angular-datagrid@4.27.0':
+  '@revolist/angular-datagrid@4.28.0':
     dependencies:
-      '@revolist/revogrid': 4.27.0
+      '@revolist/revogrid': 4.28.0
       '@stencil/core': 4.43.5
       tslib: 2.8.1
 
-  '@revolist/pivot-trial@2.9.1':
+  '@revolist/pivot-trial@2.9.3':
     dependencies:
       '@fortawesome/fontawesome-free': 7.3.1
       '@revolist/revogrid': 4.28.0
-      '@revolist/rv-pro-trial': 2.9.1
+      '@revolist/rv-pro-trial': 2.9.3
 
-  '@revolist/react-datagrid@4.27.0':
+  '@revolist/react-datagrid@4.28.0':
     dependencies:
-      '@revolist/revogrid': 4.27.0
+      '@revolist/revogrid': 4.28.0
 
   '@revolist/revogrid-column-numeral@2.0.11':
     dependencies:
       numeral: 2.0.6
 
-  '@revolist/revogrid@4.27.0': {}
-
-  '@revolist/revogrid@4.27.6': {}
-
   '@revolist/revogrid@4.28.0': {}
 
-  '@revolist/rv-pro-trial@2.9.1':
+  '@revolist/rv-pro-trial@2.9.3':
     dependencies:
       '@formulajs/formulajs': 4.6.1
       '@revolist/revogrid': 4.28.0
       write-excel-file: 4.1.1
 
-  '@revolist/vue3-datagrid@4.27.0':
+  '@revolist/vue3-datagrid@4.28.0':
     dependencies:
-      '@revolist/revogrid': 4.27.0
+      '@revolist/revogrid': 4.28.0
 
   '@rolldown/binding-android-arm64@1.2.3':
     optional: true
