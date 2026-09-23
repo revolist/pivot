@@ -101,6 +101,13 @@ const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('
   `,
 })
 export class PivotShowcaseGridComponent implements OnDestroy {
+  private initialPresetValue: FinancialPresetId = 'sales';
+  @Input() set initialPreset(value: FinancialPresetId) {
+    if (value && value !== this.initialPresetValue) {
+      this.initialPresetValue = value;
+      this.selectPreset(value);
+    }
+  }
   private benchmarkSource: DataType[] = resolveFinancialRows();
   readonly sourceRows = signal<DataType[]>(this.benchmarkSource);
 
@@ -162,7 +169,7 @@ export class PivotShowcaseGridComponent implements OnDestroy {
   async onAction(action: FinancialPivotAction) {
     this.actionError.set('');
     try {
-      if (action === 'reset') this.selectPreset('sales');
+      if (action === 'reset') this.selectPreset(this.initialPresetValue);
       if (action === 'save') {
         const saved = persistPivotState(this.pivotSignal(), this.activePreset());
         this.savedAvailable.set(saved);

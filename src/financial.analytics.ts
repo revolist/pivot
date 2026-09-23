@@ -4,7 +4,7 @@ import {
   serializePivotStateJson,
   type PivotConfig,
 } from '@revolist/pivot';
-import { createFinancialPreset, type FinancialPresetId } from './financial.pivot';
+import { createFinancialPreset, FINANCIAL_PRESETS, type FinancialPresetId } from './financial.pivot';
 
 const PIVOT_STORAGE_KEY = 'revogrid:pivot-showcase:report:v2';
 
@@ -30,8 +30,8 @@ export function loadSavedPivotReport(): { config: PivotConfig; preset: Financial
     const json = window.localStorage.getItem(PIVOT_STORAGE_KEY);
     if (!json) return null;
     const saved = JSON.parse(json) as { preset?: FinancialPresetId; state?: string };
-    const preset: FinancialPresetId = saved.preset === 'profitability' || saved.preset === 'product'
-      ? saved.preset : 'sales';
+    const preset: FinancialPresetId = FINANCIAL_PRESETS.some((candidate) => candidate.id === saved.preset)
+      ? saved.preset! : 'sales';
     const fallback = createFinancialPreset(preset);
     const state = parsePivotStateJson(saved.state ?? '');
     return {

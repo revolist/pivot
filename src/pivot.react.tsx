@@ -16,7 +16,6 @@ import {
   hasSavedPivotReport,
   loadSavedPivotReport,
   persistPivotState,
-  restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
 import { exportFinancialCsv, mountFinancialChart } from './financial.actions';
@@ -58,15 +57,16 @@ declare module 'react' {
 
 interface PivotProps {
   rows?: DataType[];
+  initialPreset?: FinancialPresetId;
 }
 
 const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1439px)').matches;
 
-function PivotShowcase({ rows }: PivotProps) {
+function PivotShowcase({ rows, initialPreset = 'sales' }: PivotProps) {
   const [isDark, setIsDark] = useState(() => currentTheme().isDark());
   const initialData = useMemo(() => resolveFinancialRows(rows), [rows]);
   const [data, setData] = useState<DataType[]>(initialData);
-  const [activePreset, setActivePreset] = useState<FinancialPresetId>(restoreActivePreset);
+  const [activePreset, setActivePreset] = useState<FinancialPresetId>(initialPreset);
   const [pivotConfig, setPivotConfig] = useState<PivotConfig>(() => restorePivotConfig(activePreset));
   const [configuratorVisible, setConfiguratorVisible] = useState(() => !isSmallScreen());
   const [expanded, setExpanded] = useState(false);
@@ -148,7 +148,7 @@ function PivotShowcase({ rows }: PivotProps) {
       const action = (event as CustomEvent<FinancialPivotAction>).detail;
       setActionError('');
       try {
-        if (action === 'reset') selectPreset('sales');
+        if (action === 'reset') selectPreset(initialPreset);
         if (action === 'save') {
           const saved = persistPivotState(pivotConfig, activePreset);
           setSavedAvailable(saved);

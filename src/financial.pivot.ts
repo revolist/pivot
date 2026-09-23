@@ -257,7 +257,74 @@ const PRODUCT_PERFORMANCE: PivotConfig = {
   },
 };
 
-export type FinancialPresetId = 'sales' | 'profitability' | 'product';
+const ANALYSIS_BASE: PivotConfig = {
+  ...SALES_OVERVIEW,
+  rows: ['Segment'],
+  columns: ['Year'],
+  filters: ['Country', 'Product', 'Discount Band'],
+  filterSelections: {},
+  columnCollapse: { enabled: false },
+};
+
+const PROFIT_ANALYSIS: PivotConfig = {
+  ...ANALYSIS_BASE,
+  values: [
+    { id: 'profit', prop: 'Profit', aggregator: 'sum', label: 'Profit' },
+    { id: 'sales', prop: 'Sales', aggregator: 'sum', label: 'Sales' },
+  ],
+};
+
+const CONTRIBUTION_ANALYSIS: PivotConfig = {
+  ...ANALYSIS_BASE,
+  columns: [],
+  values: [
+    { id: 'profit-contribution', prop: 'Profit', aggregator: 'sum', label: 'Share of total profit',
+      calculation: { type: 'percentOfGrandTotal' }, format: { preset: 'percent' } },
+    { id: 'profit', prop: 'Profit', aggregator: 'sum', label: 'Profit' },
+  ],
+};
+
+const RUNNING_ANALYSIS: PivotConfig = {
+  ...ANALYSIS_BASE,
+  rows: ['Country'],
+  columns: ['Month'],
+  filters: ['Year', 'Product'],
+  filterSelections: { Year: [2025] },
+  values: [{ id: 'cumulative-sales', prop: 'Sales', aggregator: 'sum', label: 'Sales year to date',
+    calculation: { type: 'runningTotal', axis: 'columns', field: 'Month' } }],
+};
+
+const YEAR_OVER_YEAR_ANALYSIS: PivotConfig = {
+  ...ANALYSIS_BASE,
+  rows: ['Product'],
+  columns: ['Year'],
+  values: [
+    { id: 'sales', prop: 'Sales', aggregator: 'sum', label: 'Sales' },
+    { id: 'sales-yoy', prop: 'Sales', aggregator: 'sum', label: 'Year-over-year change',
+      calculation: { type: 'percentDifferenceFrom', axis: 'columns', field: 'Year', base: 'previous' },
+      format: { preset: 'percent' } },
+  ],
+};
+
+const RANKING_ANALYSIS: PivotConfig = {
+  ...ANALYSIS_BASE,
+  rows: ['Product'],
+  columns: [],
+  filters: ['Year', 'Country'],
+  filterSelections: { Year: [2025] },
+  values: [
+    { id: 'profit', prop: 'Profit', aggregator: 'sum', label: 'Profit' },
+    { id: 'profit-rank', prop: 'Profit', aggregator: 'sum', label: 'Profit rank',
+      calculation: { type: 'rank', axis: 'rows', field: 'Product', order: 'desc' } },
+  ],
+};
+
+export type FinancialPresetId = 'sales' | 'profitability' | 'product'
+  | 'profit' | 'contribution' | 'running' | 'yoy' | 'ranking';
+
+export const FINANCIAL_ANALYSIS_PRESET_IDS: FinancialPresetId[] = [
+  'profit', 'contribution', 'running', 'yoy', 'ranking',
+];
 
 export interface FinancialPreset {
   id: FinancialPresetId;
@@ -281,12 +348,22 @@ export const FINANCIAL_PRESETS: FinancialPreset[] = [
     label: 'Product Performance',
     description: 'Understand which products drive volume, gross sales, and discounts.',
   },
+  { id: 'profit', label: 'Profit', description: 'Which segments make or lose money in each year?' },
+  { id: 'contribution', label: 'Contribution', description: 'What share of total profit comes from each segment? Negative profit can produce negative shares.' },
+  { id: 'running', label: 'Running total', description: 'How did 2025 sales accumulate month by month in each country?' },
+  { id: 'yoy', label: 'Year over year', description: 'Which products grew or declined from 2024 to 2025? The first year has no prior comparison.' },
+  { id: 'ranking', label: 'Ranking', description: 'Which products rank highest by 2025 profit?' },
 ];
 
 const PRESET_CONFIGS: Record<FinancialPresetId, PivotConfig> = {
   sales: SALES_OVERVIEW,
   profitability: PROFITABILITY,
   product: PRODUCT_PERFORMANCE,
+  profit: PROFIT_ANALYSIS,
+  contribution: CONTRIBUTION_ANALYSIS,
+  running: RUNNING_ANALYSIS,
+  yoy: YEAR_OVER_YEAR_ANALYSIS,
+  ranking: RANKING_ANALYSIS,
 };
 
 export function createFinancialPreset(id: FinancialPresetId = 'sales'): PivotConfig {
@@ -296,7 +373,11 @@ export function createFinancialPreset(id: FinancialPresetId = 'sales'): PivotCon
     dimensions: config.dimensions?.map((dimension) => ({ ...dimension })),
     rows: [...config.rows],
     columns: [...(config.columns || [])],
-    values: config.values.map((value) => ({ ...value })),
+    values: config.values.map((value) => ({
+      ...value,
+      calculation: value.calculation ? structuredClone(value.calculation) : undefined,
+      format: value.format ? { ...value.format } : undefined,
+    })),
     filters: [...(config.filters || [])],
     filterSelections: clonePivotFilterSelectionMap(config.filterSelections || {}),
     columnLevels: config.columnLevels

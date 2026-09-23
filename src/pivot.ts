@@ -36,13 +36,17 @@ defineCustomElements();
 
 const isSmallScreen = () => window.matchMedia('(max-width: 1439px)').matches;
 
-export function load(parentSelector: string, rows: any[] | { isDark?: boolean } = []) {
+export function load(
+  parentSelector: string,
+  rows: any[] | { isDark?: boolean } = [],
+  options: { initialPreset?: FinancialPresetId } = {},
+) {
   const parent = document.querySelector(parentSelector);
   if (!parent) return;
 
   const { isDark } = currentTheme();
   const data = resolveFinancialRows(Array.isArray(rows) ? rows : undefined);
-  let activePreset: FinancialPresetId = restoreActivePreset();
+  let activePreset: FinancialPresetId = options.initialPreset ?? restoreActivePreset();
   let pivotConfig: PivotConfig = restorePivotConfig(activePreset);
   let configuratorVisible = !isSmallScreen();
   let expanded = false;
@@ -157,8 +161,8 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
     actionError.textContent = '';
     try {
       if (action === 'reset') {
-        activePreset = 'sales';
-        pivotConfig = createFinancialPreset();
+        activePreset = options.initialPreset ?? 'sales';
+        pivotConfig = createFinancialPreset(activePreset);
         refreshLayout();
         replacePivotOptions();
       }

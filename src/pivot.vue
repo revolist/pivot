@@ -78,7 +78,7 @@ defineFinancialPivotHeaderElement();
 
 const isDark = ref(currentTheme().isDark());
 let disconnectTheme: (() => void) | undefined;
-const props = defineProps({ rows: { type: Array<any>, default: () => [] } });
+const props = defineProps<{ rows?: any[]; initialPreset?: FinancialPresetId }>();
 const initialRows = resolveFinancialRows(props.rows);
 const rows = shallowRef(initialRows);
 const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1439px)').matches;
@@ -90,7 +90,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => disconnectTheme?.());
 
-const activePreset = ref<FinancialPresetId>(restoreActivePreset());
+const activePreset = ref<FinancialPresetId>(props.initialPreset ?? restoreActivePreset());
 const pivotConfig = shallowRef<PivotConfig>(restorePivotConfig(activePreset.value));
 const configuratorVisible = ref(!isSmallScreen());
 const expanded = ref(false);
@@ -144,7 +144,7 @@ const onAction = async (event: Event) => {
   const action = (event as CustomEvent<FinancialPivotAction>).detail;
   actionError.value = '';
   try {
-    if (action === 'reset') selectPreset('sales');
+    if (action === 'reset') selectPreset(props.initialPreset ?? 'sales');
     if (action === 'save') {
       savedAvailable.value = persistPivotState(pivotConfig.value, activePreset.value);
       if (!savedAvailable.value) actionError.value = 'This browser could not save the report.';

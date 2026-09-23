@@ -1,4 +1,4 @@
-import { FINANCIAL_PRESETS, type FinancialPresetId } from '../financial.pivot';
+import { FINANCIAL_ANALYSIS_PRESET_IDS, FINANCIAL_PRESETS, type FinancialPresetId } from '../financial.pivot';
 
 export const FINANCIAL_PIVOT_HEADER_TAG = 'financial-pivot-header';
 export const FINANCIAL_PIVOT_PRESET_EVENT = 'financial-pivot-preset-select';
@@ -42,7 +42,9 @@ class FinancialPivotHeader extends HTMLElement {
     const presetSwitch = element('div', 'rv-segmented-switch financial-pivot-header__preset-switch');
     presetSwitch.setAttribute('role', 'tablist');
     presetSwitch.setAttribute('aria-label', 'Financial report presets');
-    for (const preset of FINANCIAL_PRESETS) {
+    const analysisMode = state.activePreset && FINANCIAL_ANALYSIS_PRESET_IDS.includes(state.activePreset);
+    for (const preset of FINANCIAL_PRESETS.filter((candidate) =>
+      FINANCIAL_ANALYSIS_PRESET_IDS.includes(candidate.id) === !!analysisMode)) {
       const active = state.activePreset === preset.id;
       const button = actionButton(preset.label, () => {
         if (!active) this.emit(FINANCIAL_PIVOT_PRESET_EVENT, preset.id);
