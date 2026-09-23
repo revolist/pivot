@@ -1,4 +1,5 @@
-import { exportVisiblePivotToCsv, flattenPivotCsvColumns, mountPivotChart, type PivotChartRef } from '@revolist/pivot';
+import { exportVisiblePivotToCsv, mountPivotChart, type PivotChartRef } from '@revolist/pivot';
+import type { ColumnGrouping, ColumnRegular, DataType } from '@revolist/revogrid';
 import { exportVisiblePivotToXlsx } from './pivot.xlsx-export';
 
 export async function mountFinancialChart(grid: HTMLRevoGridElement, container: HTMLElement): Promise<PivotChartRef> {
@@ -44,14 +45,49 @@ const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[character]!);
 
+type PivotColumn = ColumnGrouping | ColumnRegular;
+const isGroup = (column: PivotColumn): column is ColumnGrouping =>
+  Array.isArray((column as ColumnGrouping).children);
+const headerDepth = (column: PivotColumn): number =>
+  isGroup(column) ? 1 + Math.max(0, ...column.children.map(headerDepth)) : 1;
+const headerWidth = (column: PivotColumn): number =>
+  isGroup(column) ? column.children.reduce((sum, child) => sum + headerWidth(child), 0) : 1;
+
+/** Creates the printable result table from the same visible grid model used by CSV/XLSX. */
+export function buildPivotPrintTable(input: {
+  columns: PivotColumn[]; source?: DataType[]; pinnedBottomSource?: DataType[];
+}): string {
+  const depth = Math.max(0, ...input.columns.map(headerDepth));
+  const headerRows = Array.from({ length: depth }, () => [] as string[]);
+  const leaves: ColumnRegular[] = [];
+  const visit = (column: PivotColumn, level: number) => {
+    if (isGroup(column)) {
+      const span = headerWidth(column);
+      if (!span) return;
+      headerRows[level].push(`<th scope="colgroup" colspan="${span}">${escapeHtml(column.name)}</th>`);
+      column.children.forEach((child) => visit(child, level + 1));
+    } else {
+      leaves.push(column);
+      const rowSpan = depth - level;
+      headerRows[level].push(`<th scope="col"${rowSpan > 1 ? ` rowspan="${rowSpan}"` : ''}>${escapeHtml(column.name)}</th>`);
+    }
+  };
+  input.columns.forEach((column) => visit(column, 0));
+  const headers = headerRows.map((row) => `<tr>${row.join('')}</tr>`).join('');
+  const source = input.source ?? [];
+  const rows = [...source, ...(input.pinnedBottomSource ?? [])];
+  const body = rows.map((row, index) => `<tr${index >= source.length ? ' class="total"' : ''}>${leaves.map((column) =>
+    `<td>${escapeHtml(row[column.prop])}</td>`).join('')}</tr>`).join('');
+  return `<table><thead>${headers}</thead><tbody>${body}</tbody></table>`;
+}
+
 /** Opens the browser's print dialog; Save as PDF uses its paginated output. */
 export async function printFinancialPivot(grid: HTMLRevoGridElement): Promise<void> {
-  const columns = flattenPivotCsvColumns(await grid.getColumns());
-  const rows = [...await grid.getVisibleSource(), ...(grid.pinnedBottomSource ?? [])];
-  const pinnedStart = rows.length - (grid.pinnedBottomSource?.length ?? 0);
-  const headers = columns.map((column) => `<th scope="col">${escapeHtml(column.header)}</th>`).join('');
-  const body = rows.map((row, index) => `<tr${index >= pinnedStart ? ' class="total"' : ''}>${columns.map((column) =>
-    `<td>${escapeHtml(row[column.prop])}</td>`).join('')}</tr>`).join('');
+  const table = buildPivotPrintTable({
+    columns: await grid.getColumns(),
+    source: await grid.getVisibleSource(),
+    pinnedBottomSource: grid.pinnedBottomSource,
+  });
   const frame = document.createElement('iframe');
   frame.title = 'Visible pivot result for printing';
   frame.style.cssText = 'position:absolute;width:0;height:0;border:0';
@@ -61,7 +97,7 @@ export async function printFinancialPivot(grid: HTMLRevoGridElement): Promise<vo
     thead { display:table-header-group; } tr { break-inside:avoid; } th,td { border:1px solid #cad5d6; padding:5px; text-align:left; }
     th,.total { background:#e8f1f0; font-weight:700; }
   </style></head><body><h1>Visible Pivot Result</h1><p>Current visible rows and columns, including pinned totals.</p>
-  <table><thead><tr>${headers}</tr></thead><tbody>${body}</tbody></table></body></html>`;
+  ${table}</body></html>`;
   frame.onload = () => {
     frame.contentWindow?.focus();
     frame.contentWindow?.print();
