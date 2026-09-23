@@ -6,6 +6,14 @@ import vue from '@vitejs/plugin-vue';
 
 export default defineConfig(({ mode }) => ({
   base: './',
+  build: {
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        charts: fileURLToPath(new URL('./charts.html', import.meta.url)),
+      },
+    },
+  },
   resolve: {
     alias: {
       './pivot-entry': fileURLToPath(
