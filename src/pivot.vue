@@ -50,12 +50,14 @@ import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
   activeFinancialFilters,
   hasSavedPivotReport,
+  handleReportAction,
+  listSavedPivotReports,
   loadSavedPivotReport,
   persistPivotState,
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, mountFinancialChart } from './financial.actions';
+import { exportFinancialCsv, exportFinancialXlsx, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -98,6 +100,7 @@ const chartVisible = ref(false);
 const chartContainer = ref<HTMLElement>();
 let chart: PivotChartRef | undefined;
 const savedAvailable = ref(hasSavedPivotReport());
+const reportsRevision = ref(0);
 const actionError = ref('');
 const gridElement = ref<HTMLRevoGridElement>();
 const columnTypes = ref(FINANCIAL_COLUMN_TYPES);
@@ -108,6 +111,7 @@ const headerState = computed<FinancialPivotHeaderState>(() => ({
   expanded: expanded.value,
   chartVisible: chartVisible.value,
   savedAvailable: savedAvailable.value,
+  savedReports: (reportsRevision.value, listSavedPivotReports()),
   activeFilters: activeFinancialFilters(pivotConfig.value),
 }));
 
@@ -144,6 +148,20 @@ const onAction = async (event: Event) => {
   const action = (event as CustomEvent<FinancialPivotAction>).detail;
   actionError.value = '';
   try {
+    if (action === 'export-json' || typeof action === 'object') {
+      const result = handleReportAction(action, pivotConfig.value, activePreset.value);
+      if (result.restored) {
+        if (gridElement.value) gridElement.value.pivot = undefined;
+        window.setTimeout(() => {
+          pivotConfig.value = result.restored!.config;
+          activePreset.value = result.restored!.preset;
+        });
+      }
+      actionError.value = result.error ?? '';
+      savedAvailable.value = hasSavedPivotReport();
+      reportsRevision.value++;
+      return;
+    }
     if (action === 'reset') selectPreset(props.initialPreset ?? 'sales');
     if (action === 'save') {
       savedAvailable.value = persistPivotState(pivotConfig.value, activePreset.value);
@@ -160,6 +178,8 @@ const onAction = async (event: Event) => {
       } else actionError.value = 'The saved report could not be restored.';
     }
     if (action === 'export' && gridElement.value) await exportFinancialCsv(gridElement.value);
+    if (action === 'export-xlsx' && gridElement.value) await exportFinancialXlsx(gridElement.value);
+    if (action === 'print' && gridElement.value) await printFinancialPivot(gridElement.value);
     if (action === 'chart') {
       chartVisible.value = !chartVisible.value;
       if (chartVisible.value && !chart) {

@@ -5,12 +5,14 @@ import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
   activeFinancialFilters,
   hasSavedPivotReport,
+  handleReportAction,
+  listSavedPivotReports,
   loadSavedPivotReport,
   persistPivotState,
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, mountFinancialChart } from './financial.actions';
+import { exportFinancialCsv, exportFinancialXlsx, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -63,6 +65,7 @@ export function load(
     expanded,
     chartVisible,
     savedAvailable,
+    savedReports: listSavedPivotReports(),
     activeFilters: activeFinancialFilters(pivotConfig),
   });
 
@@ -95,6 +98,7 @@ export function load(
       expanded,
       chartVisible,
       savedAvailable,
+      savedReports: listSavedPivotReports(),
       activeFilters: activeFinancialFilters(pivotConfig),
     };
     chartContainer.hidden = !chartVisible;
@@ -160,6 +164,17 @@ export function load(
     const action = (event as CustomEvent<FinancialPivotAction>).detail;
     actionError.textContent = '';
     try {
+      if (action === 'export-json' || typeof action === 'object') {
+        const result = handleReportAction(action, pivotConfig, activePreset);
+        if (result.restored) {
+          pivotConfig = result.restored.config;
+          activePreset = result.restored.preset;
+          replacePivotOptions();
+        }
+        actionError.textContent = result.error ?? '';
+        refreshLayout();
+        return;
+      }
       if (action === 'reset') {
         activePreset = options.initialPreset ?? 'sales';
         pivotConfig = createFinancialPreset(activePreset);
@@ -181,6 +196,8 @@ export function load(
         } else actionError.textContent = 'The saved report could not be restored.';
       }
       if (action === 'export') await exportFinancialCsv(grid);
+      if (action === 'export-xlsx') await exportFinancialXlsx(grid);
+      if (action === 'print') await printFinancialPivot(grid);
       if (action === 'chart') {
         chartVisible = !chartVisible;
         refreshLayout();

@@ -17,12 +17,14 @@ import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
   activeFinancialFilters,
   hasSavedPivotReport,
+  handleReportAction,
+  listSavedPivotReports,
   loadSavedPivotReport,
   persistPivotState,
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, mountFinancialChart } from './financial.actions';
+import { exportFinancialCsv, exportFinancialXlsx, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -136,18 +138,21 @@ export class PivotShowcaseGridComponent implements OnDestroy {
 
   readonly chartVisible = signal(false);
   readonly savedAvailable = signal(hasSavedPivotReport());
+  readonly reportsRevision = signal(0);
   readonly actionError = signal('');
   private chart?: PivotChartRef;
 
   @ViewChild('chartContainer', { read: ElementRef }) chartContainer?: ElementRef<HTMLElement>;
 
   get headerState(): FinancialPivotHeaderState {
+    this.reportsRevision();
     return {
       activePreset: this.activePreset(),
       configuratorVisible: this.configuratorVisible(),
       expanded: this.expanded(),
       chartVisible: this.chartVisible(),
       savedAvailable: this.savedAvailable(),
+      savedReports: listSavedPivotReports(),
       activeFilters: activeFinancialFilters(this.pivotSignal()),
     };
   }
@@ -169,6 +174,13 @@ export class PivotShowcaseGridComponent implements OnDestroy {
   async onAction(action: FinancialPivotAction) {
     this.actionError.set('');
     try {
+      if (action === 'export-json' || typeof action === 'object') {
+        const result = handleReportAction(action, this.pivotSignal(), this.activePreset());
+        if (result.restored) this.replacePivot(result.restored.config, result.restored.preset);
+        this.actionError.set(result.error ?? '');
+        this.reportsRevision.update((value) => value + 1);
+        return;
+      }
       if (action === 'reset') this.selectPreset(this.initialPresetValue);
       if (action === 'save') {
         const saved = persistPivotState(this.pivotSignal(), this.activePreset());
@@ -181,6 +193,8 @@ export class PivotShowcaseGridComponent implements OnDestroy {
         else this.actionError.set('The saved report could not be restored.');
       }
       if (action === 'export' && this.gridElement) await exportFinancialCsv(this.gridElement.nativeElement);
+      if (action === 'export-xlsx' && this.gridElement) await exportFinancialXlsx(this.gridElement.nativeElement);
+      if (action === 'print' && this.gridElement) await printFinancialPivot(this.gridElement.nativeElement);
       if (action === 'chart') {
         this.chartVisible.set(!this.chartVisible());
         if (this.chartVisible() && !this.chart && this.gridElement && this.chartContainer) {

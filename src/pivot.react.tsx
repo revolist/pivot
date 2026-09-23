@@ -14,11 +14,13 @@ import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
   activeFinancialFilters,
   hasSavedPivotReport,
+  handleReportAction,
+  listSavedPivotReports,
   loadSavedPivotReport,
   persistPivotState,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, mountFinancialChart } from './financial.actions';
+import { exportFinancialCsv, exportFinancialXlsx, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -72,6 +74,7 @@ function PivotShowcase({ rows, initialPreset = 'sales' }: PivotProps) {
   const [expanded, setExpanded] = useState(false);
   const [chartVisible, setChartVisible] = useState(false);
   const [savedAvailable, setSavedAvailable] = useState(hasSavedPivotReport);
+  const [reportsRevision, setReportsRevision] = useState(0);
   const [actionError, setActionError] = useState('');
   const chartContainer = useRef<HTMLDivElement>(null);
   const chartRef = useRef<PivotChartRef>();
@@ -129,8 +132,9 @@ function PivotShowcase({ rows, initialPreset = 'sales' }: PivotProps) {
     expanded,
     chartVisible,
     savedAvailable,
+    savedReports: listSavedPivotReports(),
     activeFilters: activeFinancialFilters(pivotConfig),
-  }), [activePreset, configuratorVisible, expanded, chartVisible, savedAvailable, pivotConfig]);
+  }), [activePreset, configuratorVisible, expanded, chartVisible, savedAvailable, pivotConfig, reportsRevision]);
 
   useEffect(() => {
     if (headerRef.current) headerRef.current.state = headerState;
@@ -148,6 +152,17 @@ function PivotShowcase({ rows, initialPreset = 'sales' }: PivotProps) {
       const action = (event as CustomEvent<FinancialPivotAction>).detail;
       setActionError('');
       try {
+        if (action === 'export-json' || typeof action === 'object') {
+          const result = handleReportAction(action, pivotConfig, activePreset);
+          if (result.restored) {
+            if (gridRef.current) gridRef.current.pivot = undefined;
+            window.setTimeout(() => { setPivotConfig(result.restored!.config); setActivePreset(result.restored!.preset); });
+          }
+          setActionError(result.error ?? '');
+          setSavedAvailable(hasSavedPivotReport());
+          setReportsRevision((value) => value + 1);
+          return;
+        }
         if (action === 'reset') selectPreset(initialPreset);
         if (action === 'save') {
           const saved = persistPivotState(pivotConfig, activePreset);
@@ -162,6 +177,8 @@ function PivotShowcase({ rows, initialPreset = 'sales' }: PivotProps) {
           } else setActionError('The saved report could not be restored.');
         }
         if (action === 'export' && gridRef.current) await exportFinancialCsv(gridRef.current);
+        if (action === 'export-xlsx' && gridRef.current) await exportFinancialXlsx(gridRef.current);
+        if (action === 'print' && gridRef.current) await printFinancialPivot(gridRef.current);
         if (action === 'chart') setChartVisible((value) => !value);
       } catch { setActionError(`Could not complete ${action}.`); }
     };

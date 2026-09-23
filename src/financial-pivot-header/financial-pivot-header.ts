@@ -5,7 +5,9 @@ export const FINANCIAL_PIVOT_PRESET_EVENT = 'financial-pivot-preset-select';
 export const FINANCIAL_PIVOT_CONFIGURATOR_EVENT = 'financial-pivot-configurator-toggle';
 export const FINANCIAL_PIVOT_EXPANDED_EVENT = 'financial-pivot-expanded-toggle';
 export const FINANCIAL_PIVOT_ACTION_EVENT = 'financial-pivot-action';
-export type FinancialPivotAction = 'chart' | 'export' | 'save' | 'restore' | 'reset';
+export type FinancialPivotAction = 'chart' | 'export' | 'save' | 'restore' | 'reset' | 'export-json' | 'import-json' | 'export-xlsx' | 'print'
+  | { kind: 'save-named' | 'restore-named' | 'delete-named'; name: string }
+  | { kind: 'import-json'; json: string };
 
 export interface FinancialPivotHeaderState {
   activePreset: FinancialPresetId | null;
@@ -13,6 +15,7 @@ export interface FinancialPivotHeaderState {
   expanded: boolean;
   chartVisible?: boolean;
   savedAvailable?: boolean;
+  savedReports?: string[];
   activeFilters?: string[];
 }
 
@@ -75,6 +78,36 @@ class FinancialPivotHeader extends HTMLElement {
       actionButton('Restore saved report', () => { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'restore'); reportMenu.open = false; }, 'restore'),
     );
     (menu.lastElementChild as HTMLButtonElement).disabled = !state.savedAvailable;
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.placeholder = 'Report name';
+    nameInput.maxLength = 80;
+    nameInput.setAttribute('aria-label', 'Report name');
+    menu.append(nameInput, actionButton('Save named report', () => {
+      const name = nameInput.value.trim();
+      if (name) { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'save-named', name }); reportMenu.open = false; }
+      else nameInput.focus();
+    }, 'save-named'));
+    for (const name of state.savedReports ?? []) {
+      const row = element('div', 'financial-pivot-header__saved-row');
+      row.append(actionButton(`Open ${name}`, () => { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'restore-named', name }); reportMenu.open = false; }, `open-${name}`));
+      row.append(actionButton(`Delete ${name}`, () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'delete-named', name }), `delete-${name}`));
+      menu.append(row);
+    }
+    menu.append(
+      actionButton('Download report JSON', () => { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export-json'); reportMenu.open = false; }, 'export-json'),
+      actionButton('Export XLSX (visible result)', () => { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export-xlsx'); reportMenu.open = false; }, 'export-xlsx'),
+      actionButton('Print / Save PDF (visible result)', () => { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'print'); reportMenu.open = false; }, 'print'),
+      actionButton('Import report JSON', () => {
+        const picker = document.createElement('input');
+        picker.type = 'file'; picker.accept = '.json,application/json';
+        picker.addEventListener('change', async () => {
+          const file = picker.files?.[0];
+          if (file) this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'import-json', json: await file.text() });
+        });
+        picker.click(); reportMenu.open = false;
+      }, 'import-json'),
+    );
     reportMenu.append(menu);
     actions.append(reportMenu,
       actionButton('Reset', () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'reset'), 'reset'),
