@@ -1,12 +1,16 @@
 import { defineCustomElements } from '@revolist/revogrid/loader';
-import type { PivotConfig } from '@revolist/pivot';
+import type { PivotConfig, PivotChartRef } from '@revolist/pivot';
 import './financial-pivot-header/financial-pivot-header.scss';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
+  activeFinancialFilters,
+  hasSavedPivotReport,
+  loadSavedPivotReport,
   persistPivotState,
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
+import { exportFinancialCsv, mountFinancialChart } from './financial.actions';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -22,13 +26,15 @@ import {
 import {
   FINANCIAL_PIVOT_CONFIGURATOR_EVENT,
   FINANCIAL_PIVOT_EXPANDED_EVENT,
+  FINANCIAL_PIVOT_ACTION_EVENT,
   FINANCIAL_PIVOT_PRESET_EVENT,
   createFinancialPivotHeader,
+  type FinancialPivotAction,
 } from './financial-pivot-header/financial-pivot-header';
 
 defineCustomElements();
 
-const isSmallScreen = () => window.matchMedia('(max-width: 767px)').matches;
+const isSmallScreen = () => window.matchMedia('(max-width: 1439px)').matches;
 
 export function load(parentSelector: string, rows: any[] | { isDark?: boolean } = []) {
   const parent = document.querySelector(parentSelector);
@@ -40,6 +46,9 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
   let pivotConfig: PivotConfig = restorePivotConfig(activePreset);
   let configuratorVisible = !isSmallScreen();
   let expanded = false;
+  let chartVisible = false;
+  let chart: PivotChartRef | undefined;
+  let savedAvailable = hasSavedPivotReport();
 
   const container = document.createElement('div');
   container.className = 'financial-pivot-showcase grow flex flex-col gap-2 h-full p-2 box-border';
@@ -48,7 +57,18 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
     activePreset,
     configuratorVisible,
     expanded,
+    chartVisible,
+    savedAvailable,
+    activeFilters: activeFinancialFilters(pivotConfig),
   });
+
+  const chartContainer = document.createElement('div');
+  chartContainer.className = 'financial-pivot-chart';
+  chartContainer.setAttribute('aria-label', 'Pivot chart');
+  chartContainer.hidden = true;
+  const actionError = document.createElement('div');
+  actionError.setAttribute('role', 'alert');
+  actionError.className = 'financial-pivot-header__question';
 
   const scrollContainer = document.createElement('div');
   scrollContainer.className = 'grow min-h-0 overflow-auto';
@@ -69,8 +89,11 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
       activePreset,
       configuratorVisible,
       expanded,
+      chartVisible,
+      savedAvailable,
+      activeFilters: activeFinancialFilters(pivotConfig),
     };
-    gridContainer.style.minWidth = configuratorVisible ? '920px' : '680px';
+    chartContainer.hidden = !chartVisible;
     Object.assign(container.style, expanded
       ? { position: 'fixed', inset: '8px', zIndex: '1000', background: 'var(--financial-pivot-expanded-background)' }
       : { position: '', inset: '', zIndex: '', background: '' });
@@ -78,7 +101,6 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
 
   const onPivotConfigUpdate = (event: CustomEvent<PivotConfig>) => {
     pivotConfig = event.detail || createFinancialPreset();
-    persistPivotState(pivotConfig, activePreset);
     refreshLayout();
   };
   function initializeGrid() {
@@ -118,7 +140,6 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
     const id = (event as CustomEvent<FinancialPresetId>).detail;
     pivotConfig = createFinancialPreset(id);
     activePreset = id;
-    persistPivotState(pivotConfig, activePreset);
     refreshLayout();
     replacePivotOptions();
   });
@@ -131,18 +152,52 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
     expanded = !expanded;
     refreshLayout();
   });
+  header.addEventListener(FINANCIAL_PIVOT_ACTION_EVENT, async (event) => {
+    const action = (event as CustomEvent<FinancialPivotAction>).detail;
+    actionError.textContent = '';
+    try {
+      if (action === 'reset') {
+        activePreset = 'sales';
+        pivotConfig = createFinancialPreset();
+        refreshLayout();
+        replacePivotOptions();
+      }
+      if (action === 'save') {
+        savedAvailable = persistPivotState(pivotConfig, activePreset);
+        if (!savedAvailable) actionError.textContent = 'This browser could not save the report.';
+        refreshLayout();
+      }
+      if (action === 'restore') {
+        const saved = loadSavedPivotReport();
+        if (saved) {
+          pivotConfig = saved.config;
+          activePreset = saved.preset;
+          refreshLayout();
+          replacePivotOptions();
+        } else actionError.textContent = 'The saved report could not be restored.';
+      }
+      if (action === 'export') await exportFinancialCsv(grid);
+      if (action === 'chart') {
+        chartVisible = !chartVisible;
+        refreshLayout();
+        if (chartVisible && !chart) chart = await mountFinancialChart(grid, chartContainer);
+      }
+    } catch {
+      actionError.textContent = `Could not complete ${action}.`;
+    }
+  });
   scrollContainer.appendChild(gridContainer);
-  container.append(header, scrollContainer);
+  container.append(header, actionError, chartContainer, scrollContainer);
   parent.appendChild(container);
   refreshLayout();
   initializeGrid();
-  persistPivotState(pivotConfig, activePreset);
   const disconnectTheme = observeCurrentTheme((darkTheme) => {
     grid.theme = darkTheme ? 'darkCompact' : 'compact';
   });
 
   return () => {
     disconnectTheme();
+    chart?.destroy();
     grid.removeEventListener('pivot-config-update', onPivotConfigUpdate as EventListener);
     grid.remove();
     container.remove();

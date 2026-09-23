@@ -3,7 +3,6 @@ import {
   Component,
   computed,
   ElementRef,
-  effect,
   Input,
   NO_ERRORS_SCHEMA,
   OnDestroy,
@@ -11,14 +10,19 @@ import {
   ViewChild,
   ViewEncapsulation,
 } from '@angular/core';
+import { NgIf } from '@angular/common';
 import { RevoGrid, type DataType } from '@revolist/angular-datagrid';
-import type { PivotConfig } from '@revolist/pivot';
+import type { PivotConfig, PivotChartRef } from '@revolist/pivot';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
+  activeFinancialFilters,
+  hasSavedPivotReport,
+  loadSavedPivotReport,
   persistPivotState,
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
+import { exportFinancialCsv, mountFinancialChart } from './financial.actions';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -33,17 +37,18 @@ import {
 } from './financial.pivot';
 import {
   defineFinancialPivotHeaderElement,
+  type FinancialPivotAction,
   type FinancialPivotHeaderState,
 } from './financial-pivot-header/financial-pivot-header';
 
 defineFinancialPivotHeaderElement();
 
-const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1439px)').matches;
 
 @Component({
   selector: 'pivot-showcase-grid',
   standalone: true,
-  imports: [RevoGrid],
+  imports: [RevoGrid, NgIf],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./financial-pivot-header/financial-pivot-header.scss'],
@@ -61,12 +66,14 @@ const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('
         (financial-pivot-preset-select)="selectPreset($any($event).detail)"
         (financial-pivot-configurator-toggle)="configuratorVisible.set(!configuratorVisible())"
         (financial-pivot-expanded-toggle)="expanded.set(!expanded())"
+        (financial-pivot-action)="onAction($any($event).detail)"
       ></financial-pivot-header>
+      <div *ngIf="actionError()" role="alert" class="financial-pivot-header__question">{{ actionError() }}</div>
+      <div #chartContainer class="financial-pivot-chart" aria-label="Pivot chart" [hidden]="!chartVisible()"></div>
 
       <div class="grow min-h-0 overflow-auto">
         <div
           class="pivot-grid-container h-full overflow-hidden"
-          [style.min-width]="configuratorVisible() ? '920px' : '680px'"
         >
           <revo-grid
             #gridElement
@@ -120,15 +127,21 @@ export class PivotShowcaseGridComponent implements OnDestroy {
   readonly configuratorVisible = signal(!isSmallScreen());
   readonly expanded = signal(false);
 
-  constructor() {
-    effect(() => persistPivotState(this.pivotSignal(), this.activePreset()));
-  }
+  readonly chartVisible = signal(false);
+  readonly savedAvailable = signal(hasSavedPivotReport());
+  readonly actionError = signal('');
+  private chart?: PivotChartRef;
+
+  @ViewChild('chartContainer', { read: ElementRef }) chartContainer?: ElementRef<HTMLElement>;
 
   get headerState(): FinancialPivotHeaderState {
     return {
       activePreset: this.activePreset(),
       configuratorVisible: this.configuratorVisible(),
       expanded: this.expanded(),
+      chartVisible: this.chartVisible(),
+      savedAvailable: this.savedAvailable(),
+      activeFilters: activeFinancialFilters(this.pivotSignal()),
     };
   }
 
@@ -146,6 +159,30 @@ export class PivotShowcaseGridComponent implements OnDestroy {
     this.replacePivot(createFinancialPreset(id), id);
   }
 
+  async onAction(action: FinancialPivotAction) {
+    this.actionError.set('');
+    try {
+      if (action === 'reset') this.selectPreset('sales');
+      if (action === 'save') {
+        const saved = persistPivotState(this.pivotSignal(), this.activePreset());
+        this.savedAvailable.set(saved);
+        if (!saved) this.actionError.set('This browser could not save the report.');
+      }
+      if (action === 'restore') {
+        const saved = loadSavedPivotReport();
+        if (saved) this.replacePivot(saved.config, saved.preset);
+        else this.actionError.set('The saved report could not be restored.');
+      }
+      if (action === 'export' && this.gridElement) await exportFinancialCsv(this.gridElement.nativeElement);
+      if (action === 'chart') {
+        this.chartVisible.set(!this.chartVisible());
+        if (this.chartVisible() && !this.chart && this.gridElement && this.chartContainer) {
+          this.chart = await mountFinancialChart(this.gridElement.nativeElement, this.chartContainer.nativeElement);
+        }
+      }
+    } catch { this.actionError.set(`Could not complete ${action}.`); }
+  }
+
   private replacePivot(config: PivotConfig, preset: FinancialPresetId) {
     if (this.gridElement) this.gridElement.nativeElement.pivot = undefined;
     window.setTimeout(() => {
@@ -155,6 +192,7 @@ export class PivotShowcaseGridComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.chart?.destroy();
     this.disconnectTheme();
   }
 }

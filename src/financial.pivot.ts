@@ -24,11 +24,11 @@ import {
   commonAggregators,
   columnTypeRenderer,
 } from '@revolist/revogrid-pro';
-import { FINANCIAL_DATA, type FinancialRow } from './financial-dataset';
+import { SALES_TRANSACTIONS_V2 } from './sales-transactions-v2';
 import { createFinancialHeatmapColumnType } from './financial.heatmap';
 
 export const FINANCIAL_COLUMN_TYPES = {
-  currency: new NumberColumnType('$0,0.00'),
+  currency: new NumberColumnType('$0,0'),
   number: new NumberColumnType('0,0.00'),
   integer: new NumberColumnType('0,0'),
   salesHeatmap: createFinancialHeatmapColumnType('Sales', 'currency'),
@@ -70,6 +70,7 @@ const FINANCIAL_DIMENSION_DEFINITIONS: PivotConfigDimension[] = [
   { prop: 'Country', fieldGroup: 'Dimensions', sortable: true, order: 'asc', merge: true, filter: ['string', 'selection'] },
   { prop: 'Segment', fieldGroup: 'Dimensions', sortable: true, order: 'asc', merge: true, filter: ['string', 'selection'] },
   { prop: 'Year', fieldGroup: ['Dimensions', 'Date'], sortable: true, order: 'asc', columnType: 'integer', filter: ['number', 'selection'] },
+  { prop: 'Quarter', fieldGroup: ['Dimensions', 'Date'], sortable: true, order: 'asc', filter: ['string', 'selection'], filterOptions: ['Q1', 'Q2', 'Q3', 'Q4'] },
   {
     prop: 'Month',
     fieldGroup: ['Dimensions', 'Date'],
@@ -105,7 +106,7 @@ const FINANCIAL_DIMENSION_DEFINITIONS: PivotConfigDimension[] = [
     prop: 'Sales',
     fieldGroup: 'Data',
     sortable: true,
-    columnType: 'salesHeatmap',
+    columnType: 'currency',
     filter: ['number'],
     aggregators: currencyAggregators,
   },
@@ -191,22 +192,18 @@ export const FINANCIAL_MULTI_ROW_HEADER = {
 
 const SALES_OVERVIEW: PivotConfig = {
   dimensions: FINANCIAL_DIMENSIONS,
-  rows: ['Country', 'Segment'],
-  columns: ['Year', 'Month'],
-  values: [
-    { prop: 'Sales', aggregator: 'sum' },
-    { prop: 'Profit', aggregator: 'sum' },
-    { prop: 'Units Sold', aggregator: 'sum' },
-  ],
-  filters: ['Product', 'Discount Band'],
-  filterSelections: { 'Discount Band': ['High'] },
+  rows: ['Country'],
+  columns: ['Quarter'],
+  values: [{ prop: 'Sales', aggregator: 'sum' }],
+  filters: ['Year', 'Product', 'Discount Band'],
+  filterSelections: { Year: [2025] },
   hasConfigurator: true,
   flatHeaders: false,
-  collapsed: true,
+  collapsed: false,
   groupAggregations: true,
   columnCollapse: {
-    enabled: true,
-    collapsed: true,
+    enabled: false,
+    collapsed: false,
     aggregator: {
       Sales: 'sum',
       Profit: 'sum',
@@ -214,33 +211,9 @@ const SALES_OVERVIEW: PivotConfig = {
     },
     placeholder: 'Period Total',
   },
-  columnLevels: {
-    0: {
-      collapsible: true,
-      collapsed: true,
-      subtotal: true,
-      subtotalLabel: 'Year Total',
-      subtotalPosition: 'before',
-      subtotalValues: ['Sales'],
-      filterable: true,
-      sortable: true,
-    },
-    1: {
-      collapsible: true,
-      collapsed: true,
-      subtotal: false,
-      filterable: true,
-      sortable: false,
-    },
-  },
+  columnLevels: {},
   totals: {
-    subtotals: true,
-    // This preset demonstrates column-level totals without adding row subtotals.
-    disabledSubtotals: {
-      rows: {
-        fields: ['Country', 'Segment'],
-      },
-    },
+    subtotals: false,
     grandTotal: true,
     grandTotalLabel: 'Grand Total',
   },
@@ -255,8 +228,8 @@ const PROFITABILITY: PivotConfig = {
     { prop: 'Sales', aggregator: 'sum' },
     { prop: 'COGS', aggregator: 'sum' },
   ],
-  filters: ['Product', 'Discount Band'],
-  filterSelections: { 'Discount Band': ['Medium'] },
+  filters: ['Year', 'Product', 'Discount Band'],
+  filterSelections: { Year: [2025] },
   columnCollapse: {
     enabled: true,
     collapsed: true,
@@ -274,8 +247,8 @@ const PRODUCT_PERFORMANCE: PivotConfig = {
     { prop: 'Units Sold', aggregator: 'sum' },
     { prop: 'Discounts', aggregator: 'sum' },
   ],
-  filters: ['Month', 'Discount Band'],
-  filterSelections: { Month: ['December'] },
+  filters: ['Year', 'Month', 'Discount Band'],
+  filterSelections: { Year: [2025] },
   columnCollapse: {
     enabled: true,
     collapsed: true,
@@ -296,7 +269,7 @@ export const FINANCIAL_PRESETS: FinancialPreset[] = [
   {
     id: 'sales',
     label: 'Sales Overview',
-    description: 'Compare monthly revenue and demand across markets and segments.',
+    description: 'How did sales compare across countries and quarters in 2025?',
   },
   {
     id: 'profitability',
@@ -349,8 +322,8 @@ export function createFinancialPreset(id: FinancialPresetId = 'sales'): PivotCon
 
 export const FINANCIAL_SHOWCASE_PIVOT = createFinancialPreset();
 
-export function resolveFinancialRows(rows?: DataType[]): FinancialRow[] {
-  return rows?.length ? rows as FinancialRow[] : FINANCIAL_DATA;
+export function resolveFinancialRows(rows?: DataType[]): DataType[] {
+  return rows?.length ? rows : SALES_TRANSACTIONS_V2;
 }
 
 export function applyFinancialPivotOptions(

@@ -8,14 +8,18 @@ import {
   type HTMLAttributes,
 } from 'react';
 import { RevoGrid, type DataType } from '@revolist/react-datagrid';
-import type { PivotConfig } from '@revolist/pivot';
+import type { PivotConfig, PivotChartRef } from '@revolist/pivot';
 import './financial-pivot-header/financial-pivot-header.scss';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
+  activeFinancialFilters,
+  hasSavedPivotReport,
+  loadSavedPivotReport,
   persistPivotState,
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
+import { exportFinancialCsv, mountFinancialChart } from './financial.actions';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -31,10 +35,12 @@ import {
 import {
   FINANCIAL_PIVOT_CONFIGURATOR_EVENT,
   FINANCIAL_PIVOT_EXPANDED_EVENT,
+  FINANCIAL_PIVOT_ACTION_EVENT,
   FINANCIAL_PIVOT_PRESET_EVENT,
   defineFinancialPivotHeaderElement,
   type FinancialPivotHeaderElement,
   type FinancialPivotHeaderState,
+  type FinancialPivotAction,
 } from './financial-pivot-header/financial-pivot-header';
 
 defineFinancialPivotHeaderElement();
@@ -54,7 +60,7 @@ interface PivotProps {
   rows?: DataType[];
 }
 
-const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1439px)').matches;
 
 function PivotShowcase({ rows }: PivotProps) {
   const [isDark, setIsDark] = useState(() => currentTheme().isDark());
@@ -64,6 +70,11 @@ function PivotShowcase({ rows }: PivotProps) {
   const [pivotConfig, setPivotConfig] = useState<PivotConfig>(() => restorePivotConfig(activePreset));
   const [configuratorVisible, setConfiguratorVisible] = useState(() => !isSmallScreen());
   const [expanded, setExpanded] = useState(false);
+  const [chartVisible, setChartVisible] = useState(false);
+  const [savedAvailable, setSavedAvailable] = useState(hasSavedPivotReport);
+  const [actionError, setActionError] = useState('');
+  const chartContainer = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<PivotChartRef>();
 
   const pivot = useMemo(
     () => applyFinancialPivotOptions(pivotConfig, data, configuratorVisible),
@@ -81,9 +92,17 @@ function PivotShowcase({ rows }: PivotProps) {
     setData(initialData);
   }, [initialData]);
 
+  useEffect(() => () => chartRef.current?.destroy(), []);
+
   useEffect(() => {
-    persistPivotState(pivotConfig, activePreset);
-  }, [activePreset, pivotConfig]);
+    if (!chartVisible || chartRef.current || !chartContainer.current || !gridRef.current) return;
+    let cancelled = false;
+    mountFinancialChart(gridRef.current, chartContainer.current).then((chart) => {
+      if (cancelled) chart.destroy();
+      else chartRef.current = chart;
+    }).catch(() => setActionError('Could not open the chart.'));
+    return () => { cancelled = true; };
+  }, [chartVisible]);
 
   useEffect(() => {
     const grid = gridRef.current;
@@ -108,7 +127,10 @@ function PivotShowcase({ rows }: PivotProps) {
     activePreset,
     configuratorVisible,
     expanded,
-  }), [activePreset, configuratorVisible, expanded]);
+    chartVisible,
+    savedAvailable,
+    activeFilters: activeFinancialFilters(pivotConfig),
+  }), [activePreset, configuratorVisible, expanded, chartVisible, savedAvailable, pivotConfig]);
 
   useEffect(() => {
     if (headerRef.current) headerRef.current.state = headerState;
@@ -122,15 +144,38 @@ function PivotShowcase({ rows }: PivotProps) {
     };
     const onConfigurator = () => setConfiguratorVisible((value) => !value);
     const onExpanded = () => setExpanded((value) => !value);
+    const onAction = async (event: Event) => {
+      const action = (event as CustomEvent<FinancialPivotAction>).detail;
+      setActionError('');
+      try {
+        if (action === 'reset') selectPreset('sales');
+        if (action === 'save') {
+          const saved = persistPivotState(pivotConfig, activePreset);
+          setSavedAvailable(saved);
+          if (!saved) setActionError('This browser could not save the report.');
+        }
+        if (action === 'restore') {
+          const saved = loadSavedPivotReport();
+          if (saved) {
+            if (gridRef.current) gridRef.current.pivot = undefined;
+            window.setTimeout(() => { setPivotConfig(saved.config); setActivePreset(saved.preset); });
+          } else setActionError('The saved report could not be restored.');
+        }
+        if (action === 'export' && gridRef.current) await exportFinancialCsv(gridRef.current);
+        if (action === 'chart') setChartVisible((value) => !value);
+      } catch { setActionError(`Could not complete ${action}.`); }
+    };
     header.addEventListener(FINANCIAL_PIVOT_PRESET_EVENT, onPreset);
     header.addEventListener(FINANCIAL_PIVOT_CONFIGURATOR_EVENT, onConfigurator);
     header.addEventListener(FINANCIAL_PIVOT_EXPANDED_EVENT, onExpanded);
+    header.addEventListener(FINANCIAL_PIVOT_ACTION_EVENT, onAction);
     return () => {
       header.removeEventListener(FINANCIAL_PIVOT_PRESET_EVENT, onPreset);
       header.removeEventListener(FINANCIAL_PIVOT_CONFIGURATOR_EVENT, onConfigurator);
       header.removeEventListener(FINANCIAL_PIVOT_EXPANDED_EVENT, onExpanded);
+      header.removeEventListener(FINANCIAL_PIVOT_ACTION_EVENT, onAction);
     };
-  }, [selectPreset]);
+  }, [selectPreset, pivotConfig, activePreset]);
 
   return (
     <div
@@ -138,9 +183,11 @@ function PivotShowcase({ rows }: PivotProps) {
       style={expanded ? { position: 'fixed', inset: 8, zIndex: 1000, background: 'var(--financial-pivot-expanded-background)' } : undefined}
     >
       <financial-pivot-header ref={headerRef} />
+      {actionError && <div role="alert" className="financial-pivot-header__question">{actionError}</div>}
+      <div ref={chartContainer} className="financial-pivot-chart" aria-label="Pivot chart" hidden={!chartVisible} />
 
       <div className="grow min-h-0 overflow-auto">
-        <div className="pivot-grid-container h-full overflow-hidden" style={{ minWidth: configuratorVisible ? 920 : 680 }}>
+        <div className="pivot-grid-container h-full overflow-hidden">
           <RevoGrid
             ref={gridRef}
             className="overflow-hidden skip-style h-full min-h-0 cell-border"

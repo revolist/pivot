@@ -8,12 +8,14 @@
       @financial-pivot-preset-select="onPresetSelect"
       @financial-pivot-configurator-toggle="configuratorVisible = !configuratorVisible"
       @financial-pivot-expanded-toggle="expanded = !expanded"
+      @financial-pivot-action="onAction"
     />
+    <div v-if="actionError" role="alert" class="financial-pivot-header__question">{{ actionError }}</div>
+    <div v-show="chartVisible" ref="chartContainer" class="financial-pivot-chart" aria-label="Pivot chart" />
 
     <div class="grow min-h-0 overflow-auto">
       <div
         class="pivot-grid-container h-full overflow-hidden gap-1"
-        :style="{ minWidth: configuratorVisible ? '920px' : '680px' }"
       >
         <RevoGrid
           ref="gridElement"
@@ -41,15 +43,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import RevoGrid from '@revolist/vue3-datagrid';
-import type { PivotConfig } from '@revolist/pivot';
+import type { PivotConfig, PivotChartRef } from '@revolist/pivot';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import {
+  activeFinancialFilters,
+  hasSavedPivotReport,
+  loadSavedPivotReport,
   persistPivotState,
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
+import { exportFinancialCsv, mountFinancialChart } from './financial.actions';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -64,6 +70,7 @@ import {
 } from './financial.pivot';
 import {
   defineFinancialPivotHeaderElement,
+  type FinancialPivotAction,
   type FinancialPivotHeaderState,
 } from './financial-pivot-header/financial-pivot-header';
 
@@ -74,7 +81,7 @@ let disconnectTheme: (() => void) | undefined;
 const props = defineProps({ rows: { type: Array<any>, default: () => [] } });
 const initialRows = resolveFinancialRows(props.rows);
 const rows = shallowRef(initialRows);
-const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1439px)').matches;
 
 onMounted(() => {
   disconnectTheme = observeCurrentTheme((value) => {
@@ -87,6 +94,11 @@ const activePreset = ref<FinancialPresetId>(restoreActivePreset());
 const pivotConfig = shallowRef<PivotConfig>(restorePivotConfig(activePreset.value));
 const configuratorVisible = ref(!isSmallScreen());
 const expanded = ref(false);
+const chartVisible = ref(false);
+const chartContainer = ref<HTMLElement>();
+let chart: PivotChartRef | undefined;
+const savedAvailable = ref(hasSavedPivotReport());
+const actionError = ref('');
 const gridElement = ref<HTMLRevoGridElement>();
 const columnTypes = ref(FINANCIAL_COLUMN_TYPES);
 const plugins = FINANCIAL_SHOWCASE_PLUGINS;
@@ -94,12 +106,10 @@ const headerState = computed<FinancialPivotHeaderState>(() => ({
   activePreset: activePreset.value,
   configuratorVisible: configuratorVisible.value,
   expanded: expanded.value,
+  chartVisible: chartVisible.value,
+  savedAvailable: savedAvailable.value,
+  activeFilters: activeFinancialFilters(pivotConfig.value),
 }));
-watch(
-  [pivotConfig, activePreset],
-  ([config, preset]) => persistPivotState(config, preset),
-  { immediate: true },
-);
 
 const pivot = computed(() =>
   applyFinancialPivotOptions(
@@ -110,7 +120,7 @@ const pivot = computed(() =>
 );
 
 const expandedStyle = computed(() => expanded.value
-  ? { position: 'fixed', inset: '8px', zIndex: 1000, background: 'var(--financial-pivot-expanded-background)' }
+  ? { position: 'fixed' as const, inset: '8px', zIndex: 1000, background: 'var(--financial-pivot-expanded-background)' }
   : undefined,
 );
 
@@ -129,6 +139,39 @@ const selectPreset = (id: FinancialPresetId) => {
 const onPresetSelect = (event: Event) => {
   selectPreset((event as CustomEvent<FinancialPresetId>).detail);
 };
+
+const onAction = async (event: Event) => {
+  const action = (event as CustomEvent<FinancialPivotAction>).detail;
+  actionError.value = '';
+  try {
+    if (action === 'reset') selectPreset('sales');
+    if (action === 'save') {
+      savedAvailable.value = persistPivotState(pivotConfig.value, activePreset.value);
+      if (!savedAvailable.value) actionError.value = 'This browser could not save the report.';
+    }
+    if (action === 'restore') {
+      const saved = loadSavedPivotReport();
+      if (saved) {
+        if (gridElement.value) gridElement.value.pivot = undefined;
+        window.setTimeout(() => {
+          pivotConfig.value = saved.config;
+          activePreset.value = saved.preset;
+        });
+      } else actionError.value = 'The saved report could not be restored.';
+    }
+    if (action === 'export' && gridElement.value) await exportFinancialCsv(gridElement.value);
+    if (action === 'chart') {
+      chartVisible.value = !chartVisible.value;
+      if (chartVisible.value && !chart) {
+        await nextTick();
+        if (gridElement.value && chartContainer.value) chart = await mountFinancialChart(gridElement.value, chartContainer.value);
+      }
+    }
+  } catch {
+    actionError.value = `Could not complete ${action}.`;
+  }
+};
+onBeforeUnmount(() => chart?.destroy());
 </script>
 
 <style lang="scss">

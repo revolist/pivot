@@ -4,57 +4,69 @@ import {
   serializePivotStateJson,
   type PivotConfig,
 } from '@revolist/pivot';
-import {
-  createFinancialPreset,
-  type FinancialPresetId,
-} from './financial.pivot';
+import { createFinancialPreset, type FinancialPresetId } from './financial.pivot';
 
-const PIVOT_STORAGE_KEY = 'revogrid:pivot-showcase:v1';
-const PIVOT_PRESET_STORAGE_KEY = 'revogrid:pivot-showcase:preset:v1';
+const PIVOT_STORAGE_KEY = 'revogrid:pivot-showcase:report:v2';
+
+export function hasSavedPivotReport(): boolean {
+  try {
+    return typeof window !== 'undefined' && !!window.localStorage.getItem(PIVOT_STORAGE_KEY);
+  } catch {
+    return false;
+  }
+}
 
 export function restoreActivePreset(): FinancialPresetId {
-  if (typeof window === 'undefined') return 'sales';
-  try {
-    const saved = window.localStorage.getItem(PIVOT_PRESET_STORAGE_KEY);
-    return saved === 'profitability' || saved === 'product' ? saved : 'sales';
-  } catch {
-    return 'sales';
-  }
+  return 'sales';
 }
 
+/** The sales report is always the first impression; saved state is restored only by action. */
 export function restorePivotConfig(preset: FinancialPresetId): PivotConfig {
-  const fallback = createFinancialPreset(preset);
-  if (typeof window === 'undefined') return fallback;
+  return createFinancialPreset(preset);
+}
 
+export function loadSavedPivotReport(): { config: PivotConfig; preset: FinancialPresetId } | null {
   try {
     const json = window.localStorage.getItem(PIVOT_STORAGE_KEY);
-    if (!json) return fallback;
-    const saved = parsePivotStateJson(json);
+    if (!json) return null;
+    const saved = JSON.parse(json) as { preset?: FinancialPresetId; state?: string };
+    const preset: FinancialPresetId = saved.preset === 'profitability' || saved.preset === 'product'
+      ? saved.preset : 'sales';
+    const fallback = createFinancialPreset(preset);
+    const state = parsePivotStateJson(saved.state ?? '');
     return {
-      ...fallback,
-      ...saved,
-      dimensions: fallback.dimensions,
-      rows: saved.rows ?? fallback.rows,
-      columns: saved.columns ?? fallback.columns,
-      values: saved.values ?? fallback.values,
+      preset,
+      config: {
+        ...fallback,
+        ...state,
+        dimensions: fallback.dimensions,
+        rows: state.rows ?? fallback.rows,
+        columns: state.columns ?? fallback.columns,
+        values: state.values ?? fallback.values,
+      },
     };
   } catch {
-    return fallback;
+    return null;
   }
 }
 
-export function persistPivotState(
-  config: PivotConfig,
-  preset: FinancialPresetId,
-) {
+export function persistPivotState(config: PivotConfig, preset: FinancialPresetId): boolean {
   try {
-    const serializable = createSerializablePivotConfig(config);
-    window.localStorage.setItem(
-      PIVOT_STORAGE_KEY,
-      serializePivotStateJson(serializable),
-    );
-    window.localStorage.setItem(PIVOT_PRESET_STORAGE_KEY, preset);
+    window.localStorage.setItem(PIVOT_STORAGE_KEY, JSON.stringify({
+      preset,
+      state: serializePivotStateJson(createSerializablePivotConfig(config)),
+    }));
+    return true;
   } catch {
-    // Storage can be unavailable in restricted browsing contexts.
+    return false;
   }
+}
+
+export function activeFinancialFilters(config: PivotConfig): string[] {
+  return Object.entries(config.filterSelections ?? {})
+    .flatMap(([field, selection]) => {
+      if (Array.isArray(selection)) return selection.length ? [`${field}: ${selection.join(', ')}`] : [];
+      if (selection && typeof selection === 'object') return [`${field}: selection excluded`];
+      return [];
+    });
 }
