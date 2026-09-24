@@ -38,13 +38,31 @@ test(`${feature.title} starts with a clear sales report and restores only on req
   expect(errors).toEqual([]);
 });
 
-test('main report fits the sales content width at 1280px', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/');
-  await expect(page.locator('revo-grid').first()).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole('button', { name: 'Fields' })).toHaveAttribute('aria-pressed', 'false');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-});
+for (const { width, height, showFields } of [
+  { width: 1280, height: 800, showFields: false },
+  { width: 1440, height: 900, showFields: true },
+]) {
+  test(`main report fits the sales content at ${width}px with fields ${showFields ? 'shown' : 'hidden'}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto('/');
+    // The sales-site navigation occupies about 300px; reproduce the space
+    // available to the embedded demo rather than the full standalone page.
+    await page.addStyleTag({ content: '#app { width: calc(100vw - 300px); margin-left: 300px; padding: 0; }' });
+    const grid = page.locator('revo-grid').first();
+    await expect(grid).toBeVisible({ timeout: 20_000 });
+    const fields = page.getByRole('button', { name: 'Fields' });
+    if (await fields.getAttribute('aria-pressed') !== String(showFields)) await fields.click();
+    await expect(fields).toHaveAttribute('aria-pressed', String(showFields));
+    const lastHeader = page.getByRole('columnheader', { name: 'Grand Total' }).first();
+    await expect(lastHeader).toBeVisible();
+    const headerBox = await lastHeader.boundingBox();
+    const gridBox = await page.locator('.pivot-grid-container').boundingBox();
+    expect(headerBox).not.toBeNull();
+    expect(gridBox).not.toBeNull();
+    expect(headerBox!.x + headerBox!.width).toBeLessThanOrEqual(gridBox!.x + gridBox!.width + 1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+}
 
 test('chart and visible CSV export are usable from the toolbar', async ({ page }) => {
   await page.goto('/');

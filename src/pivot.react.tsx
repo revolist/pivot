@@ -213,7 +213,7 @@ function PivotShowcase({ rows, initialPreset = 'sales' }: PivotProps) {
             resize
             filter
             multiRowHeader={FINANCIAL_MULTI_ROW_HEADER}
-            colSize={180}
+            colSize={128}
             source={data}
             columns={columns}
             pivot={pivot}

@@ -25,7 +25,7 @@
           resize
           filter
           :multi-row-header.prop="FINANCIAL_MULTI_ROW_HEADER"
-          :colSize="180"
+          :colSize="128"
           :source="rows"
           :columns="FINANCIAL_COLUMNS"
           :pivot.prop="pivot"

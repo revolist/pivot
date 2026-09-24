@@ -85,7 +85,7 @@ const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('
             [resize]="true"
             [filter]="true"
             [multiRowHeader]="multiRowHeader"
-            [colSize]="180"
+            [colSize]="128"
             [source]="sourceRows()"
             [columns]="FINANCIAL_COLUMNS"
             [pivot]="pivot()"

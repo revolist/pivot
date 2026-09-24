@@ -120,7 +120,7 @@ export function load(
       resize: true,
       filter: true,
       multiRowHeader: FINANCIAL_MULTI_ROW_HEADER,
-      colSize: 180,
+      colSize: 128,
       readonly: true,
       theme: isDark() ? 'darkCompact' : 'compact',
       columns: FINANCIAL_COLUMNS,
