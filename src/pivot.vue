@@ -15,10 +15,10 @@
 
     <div class="grow min-h-0 overflow-auto">
       <div
+        ref="gridHost"
         class="pivot-grid-container h-full overflow-hidden gap-1"
       >
         <RevoGrid
-          ref="gridElement"
           class="overflow-hidden skip-style h-full min-h-0 cell-border"
           hide-attribution
           range
@@ -102,7 +102,9 @@ let chart: PivotChartRef | undefined;
 const savedAvailable = ref(hasSavedPivotReport());
 const reportsRevision = ref(0);
 const actionError = ref('');
-const gridElement = ref<HTMLRevoGridElement>();
+const gridHost = ref<HTMLElement>();
+// The Vue wrapper ref is a component instance; actions need the public grid element API.
+const gridElement = computed(() => gridHost.value?.querySelector('revo-grid') as HTMLRevoGridElement | undefined);
 const columnTypes = ref(FINANCIAL_COLUMN_TYPES);
 const plugins = FINANCIAL_SHOWCASE_PLUGINS;
 const headerState = computed<FinancialPivotHeaderState>(() => ({

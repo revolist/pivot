@@ -2,6 +2,25 @@ import { exportVisiblePivotToCsv, mountPivotChart, type PivotChartRef } from '@r
 import type { ColumnGrouping, ColumnRegular, DataType } from '@revolist/revogrid';
 import { exportVisiblePivotToXlsx } from './pivot.xlsx-export';
 
+/** USD source amounts can accumulate binary floating-point noise; export cents. */
+function exportRows(rows: Record<string, unknown>[] | undefined) {
+  return rows?.map((row) => {
+    const copy = { ...row };
+    for (const [key, value] of Object.entries(copy)) {
+      if (typeof value === 'number' && Number.isFinite(value)) copy[key] = Number(value.toFixed(2));
+    }
+    return copy;
+  });
+}
+
+async function visibleResult(grid: HTMLRevoGridElement) {
+  return {
+    columns: await grid.getColumns(),
+    source: exportRows(await grid.getVisibleSource()),
+    pinnedBottomSource: exportRows(grid.pinnedBottomSource),
+  };
+}
+
 export async function mountFinancialChart(grid: HTMLRevoGridElement, container: HTMLElement): Promise<PivotChartRef> {
   return mountPivotChart(grid, {
     container,
@@ -11,12 +30,7 @@ export async function mountFinancialChart(grid: HTMLRevoGridElement, container: 
 }
 
 export async function exportFinancialCsv(grid: HTMLRevoGridElement): Promise<void> {
-  const csv = exportVisiblePivotToCsv({
-    columns: await grid.getColumns(),
-    source: await grid.getVisibleSource(),
-    pinnedBottomSource: grid.pinnedBottomSource,
-    bom: true,
-  });
+  const csv = exportVisiblePivotToCsv({ ...await visibleResult(grid), bom: true });
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   const anchor = document.createElement('a');
   anchor.href = url;
@@ -26,11 +40,7 @@ export async function exportFinancialCsv(grid: HTMLRevoGridElement): Promise<voi
 }
 
 export async function exportFinancialXlsx(grid: HTMLRevoGridElement): Promise<void> {
-  const bytes = exportVisiblePivotToXlsx({
-    columns: await grid.getColumns(),
-    source: await grid.getVisibleSource(),
-    pinnedBottomSource: grid.pinnedBottomSource,
-  });
+  const bytes = exportVisiblePivotToXlsx(await visibleResult(grid));
   const url = URL.createObjectURL(new Blob([bytes as BlobPart], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   }));
@@ -83,11 +93,8 @@ export function buildPivotPrintTable(input: {
 
 /** Opens the browser's print dialog; Save as PDF uses its paginated output. */
 export async function printFinancialPivot(grid: HTMLRevoGridElement): Promise<void> {
-  const table = buildPivotPrintTable({
-    columns: await grid.getColumns(),
-    source: await grid.getVisibleSource(),
-    pinnedBottomSource: grid.pinnedBottomSource,
-  });
+  const result = await visibleResult(grid);
+  const table = buildPivotPrintTable(result);
   const frame = document.createElement('iframe');
   frame.title = 'Visible pivot result for printing';
   frame.style.cssText = 'position:absolute;width:0;height:0;border:0';

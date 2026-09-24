@@ -36,8 +36,12 @@ class FinancialPivotHeader extends HTMLElement {
   disconnectedCallback() { this.replaceChildren(); }
 
   private render() {
-    const focusedAction = (this.contains(document.activeElement)
-      ? (document.activeElement as HTMLElement).dataset.action : undefined);
+    const focusedElement = this.contains(document.activeElement)
+      ? document.activeElement as HTMLElement : null;
+    const focusedAction = focusedElement?.dataset.action;
+    const focusedPreset = focusedElement?.dataset.value;
+    const focusedReportName = focusedElement?.getAttribute('aria-label') === 'Report name';
+    const reportMenuWasOpen = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu')?.open;
     const state = this.currentState;
     const root = element('div', 'financial-pivot-header');
     const toolbar = element('div', 'financial-pivot-header__toolbar');
@@ -56,9 +60,24 @@ class FinancialPivotHeader extends HTMLElement {
       button.dataset.value = preset.id;
       button.setAttribute('role', 'tab');
       button.setAttribute('aria-selected', String(active));
+      button.tabIndex = active ? 0 : -1;
       button.firstElementChild?.classList.add('rv-segmented-switch-label');
       presetSwitch.append(button);
     }
+    presetSwitch.addEventListener('keydown', (event) => {
+      if (!(event.target instanceof HTMLButtonElement)) return;
+      const tabs = [...presetSwitch.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+      const index = tabs.indexOf(event.target);
+      if (index < 0) return;
+      const next = event.key === 'Home' ? 0
+        : event.key === 'End' ? tabs.length - 1
+          : event.key === 'ArrowRight' ? (index + 1) % tabs.length
+            : event.key === 'ArrowLeft' ? (index - 1 + tabs.length) % tabs.length : -1;
+      if (next < 0) return;
+      event.preventDefault();
+      tabs[next]?.focus();
+      tabs[next]?.click();
+    });
     report.append(presetSwitch);
     const current = FINANCIAL_PRESETS.find((preset) => preset.id === state.activePreset);
     report.append(element('p', 'financial-pivot-header__question', current?.description ?? 'Explore the report.'));
@@ -69,6 +88,7 @@ class FinancialPivotHeader extends HTMLElement {
       actionButton('Export CSV', () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export'), 'export'),
     );
     const reportMenu = element('details', 'financial-pivot-header__menu');
+    reportMenu.open = !!reportMenuWasOpen;
     const summary = element('summary', 'financial-pivot-header__button', 'Report');
     summary.dataset.action = 'report';
     reportMenu.append(summary);
@@ -125,7 +145,9 @@ class FinancialPivotHeader extends HTMLElement {
     if (!state.activeFilters?.length) filters.append(element('span', '', 'None'));
     root.append(filters);
     this.replaceChildren(root);
-    if (focusedAction) this.querySelector<HTMLElement>(`[data-action="${focusedAction}"]`)?.focus();
+    if (focusedPreset) this.querySelector<HTMLElement>(`[data-value="${focusedPreset}"]`)?.focus();
+    else if (focusedReportName) nameInput.focus();
+    else if (focusedAction) this.querySelector<HTMLElement>(`[data-action="${focusedAction}"]`)?.focus();
   }
 
   private emit(name: string, detail?: FinancialPresetId | FinancialPivotAction) {

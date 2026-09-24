@@ -1,6 +1,7 @@
 import '../demo-host.css';
 import '@revolist/pivot/styles.css';
-import { createApp } from 'vue';
-import ChartsDashboard from './charts-dashboard.vue';
+import { mountChartsDemo } from './charts-mount';
 
-createApp(ChartsDashboard).mount('#app');
+const host = document.querySelector<HTMLElement>('#app');
+if (!host) throw new Error('Missing dashboard host');
+mountChartsDemo(host);

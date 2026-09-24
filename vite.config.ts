@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => ({
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
         charts: fileURLToPath(new URL('./charts.html', import.meta.url)),
+        financial: fileURLToPath(new URL('./financial.html', import.meta.url)),
       },
     },
   },

@@ -208,4 +208,4 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style src="./charts-dashboard.scss" lang="scss"></style>
+<style scoped src="./charts-dashboard.scss" lang="scss"></style>
