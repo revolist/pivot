@@ -76,4 +76,29 @@ describe('Pivot reports', () => {
     expect(html).toContain('A&amp;B');
     expect(table.querySelector('tbody tr.total')?.textContent).toContain('Grand Total');
   });
+
+  it('prints grouped Pivot rows as labeled hierarchy rows', () => {
+    const html = buildPivotPrintTable({
+      columns: [
+        { name: 'Rows', prop: 'Product' },
+        { name: 'Revenue', prop: 'revenue' },
+      ],
+      source: [
+        { '__rvgr-name': 'Audio & Video', '__rvgr-depth': 0, Category: 'Audio & Video' },
+        { '__rvgr-name': 'Headphones', '__rvgr-depth': 1, Subcategory: 'Headphones' },
+        { Product: 'Wireless Headphones', revenue: 125 },
+      ],
+      pinnedBottomSource: [{ Product: 'Grand Total', revenue: 125 }],
+    });
+    const table = document.createElement('div');
+    table.innerHTML = html;
+    const rows = [...table.querySelectorAll('tbody tr')];
+    expect(rows).toHaveLength(4);
+    expect(rows[0].querySelector('th[scope="row"]')?.textContent).toBe('Audio & Video');
+    expect(rows[0].querySelector('th')?.getAttribute('colspan')).toBe('2');
+    expect(rows[1].querySelector('th[scope="row"]')?.textContent).toBe('Headphones');
+    expect(rows[2].textContent).toContain('Wireless Headphones');
+    expect(rows[3].classList.contains('total')).toBe(true);
+    expect(html).toContain('Audio &amp; Video');
+  });
 });

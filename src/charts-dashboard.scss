@@ -9,7 +9,7 @@
   font: 14px/1.45 Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
-.dashboard-header, .dashboard-controls, .dashboard-summary, .dashboard-layout {
+.dashboard-header, .dashboard-controls, .dashboard-pivot-summary, .dashboard-layout {
   max-width: 1680px;
   margin-inline: auto;
 }
@@ -32,14 +32,16 @@
   align-items: end;
   flex-wrap: wrap;
   gap: 10px;
-  padding: 12px;
-  background: var(--dash-card);
-  border: 1px solid var(--dash-border);
-  border-radius: 12px;
+  padding-bottom: 12px;
 }
 .dashboard-controls > label { display: grid; gap: 3px; color: var(--dash-muted); font-size: 12px; font-weight: 600; }
+.dashboard-compare { display: grid; gap: 3px; }
+.dashboard-compare-label { color: var(--dash-muted); font-size: 12px; font-weight: 600; }
+.dashboard-compare-options { display: flex; align-items: center; box-sizing: border-box; height: 40px; gap: 12px; padding: 4px 10px; border: 1px solid #cbd3de; border-radius: 7px; }
+.dashboard-compare-options label { white-space: nowrap; }
 .dashboard-controls select, .dashboard-controls button {
-  min-height: 34px;
+  box-sizing: border-box;
+  height: 40px;
   padding: 5px 10px;
   border: 1px solid #cbd3de;
   border-radius: 7px;
@@ -48,24 +50,21 @@
   font: inherit;
   cursor: pointer;
 }
-.dashboard-controls fieldset { display: flex; align-items: center; gap: 12px; min-height: 34px; margin: 0; padding: 4px 10px; border: 1px solid #cbd3de; border-radius: 7px; }
-.dashboard-controls fieldset label { white-space: nowrap; }
 .dashboard-controls input { accent-color: #0b987c; }
 .dashboard-controls button:hover { background: #edf8f4; }
 .dashboard-controls :focus-visible { outline: 2px solid #087e67; outline-offset: 2px; }
 
-.dashboard-summary { display: flex; align-items: baseline; gap: 6px; padding: 12px 3px; }
-.dashboard-summary strong { font-size: 22px; }
-.dashboard-summary span { margin-left: auto; color: var(--dash-muted); }
+.dashboard-summary { display: flex; align-items: center; box-sizing: border-box; min-height: 40px; margin-left: auto; color: var(--dash-muted); }
+.dashboard-pivot-summary { margin-bottom: 12px; }
 .dashboard-layout { display: grid; grid-template-columns: minmax(360px, .9fr) minmax(560px, 1.35fr); gap: 12px; min-height: 600px; padding-bottom: 12px; }
 .dashboard-charts { display: grid; grid-template-rows: 1fr 1fr; gap: 12px; min-width: 0; }
-.dashboard-card { min-width: 0; padding: 12px; background: var(--dash-card); border: 1px solid var(--dash-border); border-radius: 12px; box-shadow: 0 1px 3px #1720330a; }
-.dashboard-card h2 { margin: 0; font-size: 17px; }
-.dashboard-card p, .report-heading span { margin: 2px 0 8px; color: var(--dash-muted); font-size: 12px; }
+.dashboard-card { min-width: 0; padding: 12px; background: var(--dash-card); }
+.dashboard-charts .dashboard-card { border: 1px solid var(--dash-border); border-radius: 12px; box-shadow: 0 1px 3px #1720330a; }
+.dashboard-card h2 { margin: 0; padding: 0; border: 0; font-size: 17px; }
+.dashboard-card p { margin: 2px 0 8px; color: var(--dash-muted); font-size: 12px; }
 .chart-host { height: 230px; min-height: 230px; }
 .chart-error { margin: 0; color: #b42318; }
 .dashboard-report { display: flex; flex-direction: column; min-height: 590px; }
-.report-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .dashboard-grid { flex: 1; min-height: 0; }
 .dashboard-grid revo-grid { display: block; width: 100%; height: 100%; }
 
@@ -77,13 +76,13 @@
 @media (max-width: 700px) {
   .dashboard-header { display: block; }
   .dashboard-charts { grid-template-columns: 1fr; }
-  .dashboard-summary { flex-wrap: wrap; }
-  .dashboard-summary span { width: 100%; margin: 0; }
+  .dashboard-summary { width: 100%; justify-content: flex-end; }
   .dashboard-layout { min-height: 0; }
   .dashboard-report { min-height: 420px; }
 }
 @media (prefers-color-scheme: dark) {
   .pivot-dashboard { --dash-ink: #e8edf7; --dash-muted: #aab6c9; --dash-border: #354154; --dash-card: #1c2635; }
   .dashboard-controls select, .dashboard-controls button { border-color: #506077; }
+  .dashboard-compare-options { border-color: #506077; }
   .dashboard-controls button:hover { background: #234638; }
 }

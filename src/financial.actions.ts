@@ -1,5 +1,5 @@
 import { exportVisiblePivotToCsv, mountPivotChart, type PivotChartRef } from '@revolist/pivot';
-import type { ColumnGrouping, ColumnRegular, DataType } from '@revolist/revogrid';
+import { GROUP_DEPTH, getGroupingName, isGrouping, type ColumnGrouping, type ColumnRegular, type DataType } from '@revolist/revogrid';
 import { exportVisiblePivotToXlsx } from './pivot.xlsx-export';
 
 /** USD source amounts can accumulate binary floating-point noise; export cents. */
@@ -25,7 +25,7 @@ export async function mountFinancialChart(grid: HTMLRevoGridElement, container: 
   return mountPivotChart(grid, {
     container,
     controls: 'standard',
-    presentation: { title: 'Sales by country and quarter' },
+    presentation: { title: 'Current Pivot report' },
   });
 }
 
@@ -86,8 +86,15 @@ export function buildPivotPrintTable(input: {
   const headers = headerRows.map((row) => `<tr>${row.join('')}</tr>`).join('');
   const source = input.source ?? [];
   const rows = [...source, ...(input.pinnedBottomSource ?? [])];
-  const body = rows.map((row, index) => `<tr${index >= source.length ? ' class="total"' : ''}>${leaves.map((column) =>
-    `<td>${escapeHtml(row[column.prop])}</td>`).join('')}</tr>`).join('');
+  const body = rows.map((row, index) => {
+    if (isGrouping(row)) {
+      const depth = Number(row[GROUP_DEPTH]);
+      const padding = 5 + (Number.isFinite(depth) ? Math.max(0, depth) : 0) * 12;
+      return `<tr class="group"><th scope="row" colspan="${leaves.length}" style="padding-left:${padding}px">${escapeHtml(getGroupingName(row))}</th></tr>`;
+    }
+    return `<tr${index >= source.length ? ' class="total"' : ''}>${leaves.map((column) =>
+      `<td>${escapeHtml(row[column.prop])}</td>`).join('')}</tr>`;
+  }).join('');
   return `<table><thead>${headers}</thead><tbody>${body}</tbody></table>`;
 }
 

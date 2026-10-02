@@ -19,6 +19,8 @@
     "url": "https://github.com/revolist/pivot/issues"
   },
   "scripts": {
+    "data:contoso": "python3 scripts/import-contoso.py",
+    "data:contoso:test": "python3 -B scripts/test-import-contoso.py",
     "dev": "pnpm dev:ts",
     "dev:ts": "vite --mode ts",
     "dev:react": "vite --mode react",

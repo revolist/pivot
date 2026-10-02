@@ -1,10 +1,10 @@
 <template>
-  <section class="pivot-dashboard">
+  <section class="pivot-dashboard" :data-chart-stage="chartStage">
     <header class="dashboard-header">
       <div>
         <p class="eyebrow">Interactive Pivot dashboard</p>
         <h1>Explore revenue from report to chart</h1>
-        <p>Change the period, customer segment, or report layout. The two linked charts follow the Pivot result.</p>
+        <p>Change the period, brand, or report layout. The two linked charts follow the Pivot result.</p>
       </div>
       <a href="https://pro.rv-grid.com/guides/pivot/" target="_blank" rel="noopener noreferrer">Pivot guide ↗</a>
     </header>
@@ -16,27 +16,29 @@
           <option :value="2024">2024</option>
         </select>
       </label>
-      <label>Segment
-        <select v-model="segment" aria-label="Segment" @change="updateControls">
-          <option value="">All segments</option>
-          <option v-for="name in segments" :key="name" :value="name">{{ name }}</option>
+      <label>Brand
+        <select v-model="brand" aria-label="Brand" @change="updateControls">
+          <option value="">All brands</option>
+          <option v-for="name in brands" :key="name" :value="name">{{ name }}</option>
         </select>
       </label>
-      <fieldset>
-        <legend>Compare</legend>
-        <label><input v-model="rowField" type="radio" value="Country" @change="updateControls" /> Countries</label>
-        <label><input v-model="rowField" type="radio" value="Product" @change="updateControls" /> Products</label>
-      </fieldset>
+      <div class="dashboard-compare" role="radiogroup" aria-labelledby="dashboard-compare-label">
+        <span id="dashboard-compare-label" class="dashboard-compare-label">Compare</span>
+        <div class="dashboard-compare-options">
+          <label><input v-model="rowField" type="radio" value="Country" @change="updateControls" /> Countries</label>
+          <label><input v-model="rowField" type="radio" value="Category" @change="updateControls" /> Categories</label>
+        </div>
+      </div>
       <button type="button" @click="reset">Reset report</button>
-      <button type="button" :aria-expanded="fieldsVisible" @click="fieldsVisible = !fieldsVisible">
-        {{ fieldsVisible ? 'Hide fields' : 'Show fields' }}
-      </button>
+      <button type="button" aria-haspopup="dialog" :aria-expanded="fieldsVisible" @click="toggleFields">Fields</button>
+      <div class="dashboard-summary" aria-live="polite">
+        <span>{{ filteredRows.length.toLocaleString() }} filtered lines · {{ year }} · {{ brand || 'all brands' }}</span>
+      </div>
     </div>
 
-    <div class="dashboard-summary" aria-live="polite">
-      <strong>{{ currency.format(revenue) }}</strong> revenue
-      <span>{{ filteredRows.length.toLocaleString() }} source lines · {{ year }} · {{ segment || 'all segments' }}</span>
-    </div>
+    <p v-if="loading" role="status">Loading Contoso retail data…</p>
+    <p v-if="loadError" role="alert">{{ loadError }}</p>
+    <div ref="summaryMount" class="dashboard-pivot-summary" />
 
     <div class="dashboard-layout">
       <div class="dashboard-charts">
@@ -53,10 +55,6 @@
         <p v-if="chartError" class="chart-error" role="alert">{{ chartError }}</p>
       </div>
       <section class="dashboard-card dashboard-report" aria-label="Pivot report">
-        <div class="report-heading">
-          <h2>Pivot report</h2>
-          <span>Revenue (USD) · {{ activeRowLabel }} × Quarter</span>
-        </div>
         <div ref="gridHost" class="dashboard-grid">
           <RevoGrid
             hide-attribution
@@ -65,7 +63,9 @@
             readonly
             :source="rows"
             :columns="CHARTS_COLUMNS"
+            :colSize="columnSize"
             :pivot.prop="pivot"
+            :pivot-summary-panel.prop="summaryOptions"
             :pivot-charts.prop="FINANCIAL_PIVOT_CHARTS"
             :pivot-charts-ui.prop="FINANCIAL_PIVOT_CHARTS_UI"
             :column-types="FINANCIAL_COLUMN_TYPES"
@@ -82,57 +82,103 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import RevoGrid from '@revolist/vue3-datagrid';
-import { mountPivotChart, type PivotChartRef, type PivotConfig } from '@revolist/pivot';
+import type { PivotChartRef, PivotChartsPlugin, PivotConfig } from '@revolist/pivot';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
+import { loadContosoData, type ContosoSale } from './contoso-data';
+import { createFinancialFieldsDrawer, type FinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMN_TYPES,
   FINANCIAL_PIVOT_CHARTS,
   FINANCIAL_PIVOT_CHARTS_UI,
   FINANCIAL_SHOWCASE_PLUGINS,
 } from './financial.pivot';
-import { SALES_TRANSACTIONS_V2 } from './sales-transactions-v2';
 import {
   CHARTS_COLUMNS,
   createChartsConfig,
   dashboardRows,
-  totalRevenue,
   type DashboardRows,
   type DashboardYear,
 } from './charts-dashboard.model';
 
-const rows = shallowRef(SALES_TRANSACTIONS_V2);
+const rows = shallowRef<ContosoSale[]>([]);
 const year = ref<DashboardYear>(2025);
-const segment = ref('');
-const segments = ['Enterprise', 'Government', 'Midmarket', 'Small Business'];
+const brand = ref('');
+const brands = computed(() => [...new Set(rows.value.map((row) => row.Brand))].sort());
+const loading = ref(true);
+const loadError = ref('');
 const rowField = ref<DashboardRows>('Country');
-const fieldsVisible = ref(window.innerWidth >= 1440);
+const fieldsVisible = ref(false);
+const configuratorMount = shallowRef<HTMLElement>();
 const pivotConfig = shallowRef<PivotConfig>(createChartsConfig());
 const pivot = computed<PivotConfig>(() => ({
   ...pivotConfig.value,
   hasConfigurator: fieldsVisible.value,
+  mountTo: fieldsVisible.value ? configuratorMount.value : undefined,
 }));
 const activeRowLabel = computed(() => String(pivotConfig.value.rows?.[0] ?? 'All records'));
 const filteredRows = computed(() => dashboardRows(pivotConfig.value, rows.value));
-const revenue = computed(() => totalRevenue(filteredRows.value));
-const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const quarterCount = computed(() => new Set(filteredRows.value.map((row) => row.Quarter)).size || 4);
+const summaryMount = shallowRef<HTMLElement>();
+const summaryOptions = computed(() => ({ mountTo: summaryMount.value }));
 const gridHost = ref<HTMLElement>();
+const gridWidth = ref(0);
+const columnSize = computed(() => {
+  const config = pivotConfig.value;
+  if (config.columns?.join('|') !== 'Quarter' || config.values.length !== 1 || config.rows.length !== 1) return 128;
+  const totalColumns = quarterCount.value + (config.totals?.grandTotal ? 1 : 0);
+  const rowWidth = config.dimensions?.find((dimension) => dimension.prop === config.rows[0])?.size ?? 0;
+  return Math.max(100, Math.floor((gridWidth.value - rowWidth - 2) / (totalColumns + (rowWidth ? 0 : 1))));
+});
 const quarterChartHost = ref<HTMLElement>();
 const comparisonChartHost = ref<HTMLElement>();
 const chartError = ref('');
+const chartStage = ref('waiting for grid');
 const isDark = ref(currentTheme().isDark());
 let disconnectTheme: (() => void) | undefined;
+let fieldsDrawer: FinancialFieldsDrawer | undefined;
 let grid: HTMLRevoGridElement | null = null;
 let charts: PivotChartRef[] = [];
 let mounting = false;
 let gridObserver: MutationObserver | undefined;
+let gridResizeObserver: ResizeObserver | undefined;
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
+let attempts = 0;
+let disposed = false;
+
+type ActiveChartsPlugin = Pick<PivotChartsPlugin, 'createChart' | 'getChartData'>;
+
+function isActiveChartsPlugin(plugin: unknown): plugin is ActiveChartsPlugin {
+  return !!plugin && typeof plugin === 'object'
+    && typeof (plugin as ActiveChartsPlugin).createChart === 'function'
+    && typeof (plugin as ActiveChartsPlugin).getChartData === 'function';
+}
+
+function connectGrid() {
+  const current = gridHost.value?.querySelector<HTMLRevoGridElement>(':scope > revo-grid') ?? null;
+  if (grid === current) return;
+  grid?.removeEventListener('pivot-model-changed', mountCharts);
+  charts.forEach((chart) => chart.destroy());
+  charts = [];
+  grid = current;
+  attempts = 0;
+  grid?.addEventListener('pivot-model-changed', mountCharts);
+}
 
 function updateControls() {
-  pivotConfig.value = createChartsConfig(year.value, rowField.value, segment.value);
+  pivotConfig.value = createChartsConfig(year.value, rowField.value, brand.value);
+}
+
+function toggleFields(event: MouseEvent) {
+  if (fieldsVisible.value) fieldsDrawer?.hide();
+  else {
+    fieldsDrawer?.show(event.currentTarget as HTMLElement);
+    fieldsVisible.value = true;
+  }
 }
 
 function reset() {
   year.value = 2025;
-  segment.value = '';
+  brand.value = '';
   rowField.value = 'Country';
   updateControls();
 }
@@ -142,70 +188,116 @@ function onConfigUpdate(event: CustomEvent<Partial<PivotConfig>>) {
   // The public event is typed as a partial config. Preserve unaffected fields.
   const nextConfig = { ...pivotConfig.value, ...event.detail };
   pivotConfig.value = nextConfig;
-  if (nextConfig.rows?.[0] === 'Country' || nextConfig.rows?.[0] === 'Product') {
+  if (nextConfig.rows?.[0] === 'Country' || nextConfig.rows?.[0] === 'Category') {
     rowField.value = nextConfig.rows[0];
   }
   const selectedYear = nextConfig.filterSelections?.Year;
   if (Array.isArray(selectedYear) && (selectedYear[0] === 2024 || selectedYear[0] === 2025)) {
     year.value = selectedYear[0];
   }
-  const selectedSegment = nextConfig.filterSelections?.Segment;
-  segment.value = Array.isArray(selectedSegment) && typeof selectedSegment[0] === 'string'
-    ? selectedSegment[0] : '';
+  const selectedBrand = nextConfig.filterSelections?.Brand;
+  brand.value = Array.isArray(selectedBrand) && typeof selectedBrand[0] === 'string'
+    ? selectedBrand[0] : '';
 }
 
 async function mountCharts() {
-  if (!grid || mounting || charts.length || !quarterChartHost.value || !comparisonChartHost.value) return;
+  connectGrid();
+  if (disposed || !grid || mounting || charts.length || !quarterChartHost.value || !comparisonChartHost.value) return;
+  const activeGrid = grid;
   mounting = true;
   chartError.value = '';
   try {
-    charts.push(await mountPivotChart(grid, {
+    chartStage.value = 'waiting for chart plugin';
+    const activePlugins: unknown[] = await activeGrid.getPlugins();
+    if (disposed) return;
+    const activeCharts = activePlugins.find(isActiveChartsPlugin);
+    if (!activeCharts) throw new Error(`Chart plugin is not active yet (${activePlugins.length} plugins)`);
+    connectGrid();
+    if (activeGrid !== grid) throw new Error('Grid element was replaced during chart startup');
+    chartStage.value = 'creating quarterly chart';
+    charts.push(await activeCharts.createChart({
       container: quarterChartHost.value,
       chartType: 'groupedColumn',
       linked: true,
       presentation: { legendPosition: 'bottom', yAxisTitle: 'Revenue (USD)' },
     }));
-    charts.push(await mountPivotChart(grid, {
+    if (disposed) {
+      charts.forEach((chart) => chart.destroy());
+      charts = [];
+      return;
+    }
+    connectGrid();
+    if (activeGrid !== grid) throw new Error('Grid element was replaced during chart startup');
+    chartStage.value = 'creating comparison chart';
+    charts.push(await activeCharts.createChart({
       container: comparisonChartHost.value,
       chartType: 'groupedBar',
       linked: true,
       presentation: { legendPosition: 'bottom', xAxisTitle: 'Revenue (USD)' },
     }));
+    connectGrid();
+    if (activeGrid !== grid) throw new Error('Grid element was replaced during chart startup');
+    if (disposed) {
+      charts.forEach((chart) => chart.destroy());
+      charts = [];
+      return;
+    }
+    chartStage.value = 'ready';
+    if (retryTimer) clearTimeout(retryTimer);
+    retryTimer = undefined;
   } catch (error) {
     charts.forEach((chart) => chart.destroy());
     charts = [];
-    chartError.value = `Charts could not be loaded: ${error instanceof Error ? error.message : String(error)}`;
+    const reason = error instanceof Error ? error.message : String(error);
+    if (!disposed && attempts < 40) {
+      attempts += 1;
+      if (retryTimer) clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => { void mountCharts(); }, 250);
+    } else if (!disposed) {
+      chartError.value = `Charts could not be loaded (${chartStage.value}): ${reason}`;
+    }
   } finally {
     mounting = false;
   }
 }
 
 onMounted(async () => {
+  fieldsDrawer = createFinancialFieldsDrawer(() => { fieldsVisible.value = false; });
+  configuratorMount.value = fieldsDrawer.mountTo;
   disconnectTheme = observeCurrentTheme((value) => { isDark.value = value; });
+  try {
+    const dataset = await loadContosoData();
+    rows.value = dataset.rows;
+  } catch (error) {
+    loadError.value = `Could not load the Contoso dataset: ${error instanceof Error ? error.message : String(error)}`;
+  } finally { loading.value = false; }
   await nextTick();
-  const connectGrid = () => {
-    if (grid) return;
-    // The wrapper owns the custom element; this query is only for its public lifecycle event.
-    grid = gridHost.value?.querySelector('revo-grid') ?? null;
-    if (!grid) return;
-    gridObserver?.disconnect();
-    grid.addEventListener('pivot-model-changed', mountCharts);
-    // The first model may have committed before the listener was attached.
-    void mountCharts();
-  };
+  // The wrapper owns the custom element; watch only for replacement of its public grid.
   connectGrid();
-  if (!grid && gridHost.value) {
-    gridObserver = new MutationObserver(connectGrid);
-    gridObserver.observe(gridHost.value, { childList: true, subtree: true });
+  if (gridHost.value) {
+    gridResizeObserver = new ResizeObserver(([entry]) => { gridWidth.value = entry.contentRect.width; });
+    gridResizeObserver.observe(gridHost.value);
+    gridObserver = new MutationObserver(() => { connectGrid(); void mountCharts(); });
+    gridObserver.observe(gridHost.value, { childList: true });
   }
+  // The first Pivot model may have committed before the listener was attached.
+  void mountCharts();
 });
 
 onBeforeUnmount(() => {
+  disposed = true;
+  if (retryTimer) clearTimeout(retryTimer);
   gridObserver?.disconnect();
+  gridResizeObserver?.disconnect();
   grid?.removeEventListener('pivot-model-changed', mountCharts);
   charts.forEach((chart) => chart.destroy());
   disconnectTheme?.();
+  fieldsDrawer?.destroy();
 });
 </script>
+
+<style lang="scss">
+@use './financial-pivot-header/financial-pivot-header.scss';
+</style>
 
 <style scoped src="./charts-dashboard.scss" lang="scss"></style>

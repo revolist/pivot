@@ -4,10 +4,11 @@ import {
   serializePivotStateJson,
   type PivotConfig,
 } from '@revolist/pivot';
+import { CONTOSO_DATASET_ID } from './contoso-data';
 import { createFinancialPreset, FINANCIAL_PRESETS, type FinancialPresetId } from './financial.pivot';
 
-const PIVOT_STORAGE_KEY = 'revogrid:pivot-showcase:report:v2';
-const NAMED_REPORTS_KEY = 'revogrid:pivot-showcase:named-reports:v1';
+const PIVOT_STORAGE_KEY = 'revogrid:pivot-showcase:report:contoso-v2';
+const NAMED_REPORTS_KEY = 'revogrid:pivot-showcase:named-reports:contoso-v2';
 export interface SavedPivotReport { name: string; preset: FinancialPresetId; state: string }
 
 function readReports(): SavedPivotReport[] {
@@ -41,14 +42,15 @@ export function deleteNamedPivotReport(name: string): void {
 }
 
 export function exportPivotReportJson(config: PivotConfig, preset: FinancialPresetId): string {
-  return JSON.stringify({ format: 'revogrid-pivot-showcase', version: 1, preset,
+  return JSON.stringify({ format: 'revogrid-pivot-showcase', version: 2, dataset: CONTOSO_DATASET_ID, preset,
     state: serializePivotStateJson(createSerializablePivotConfig(config)) }, null, 2);
 }
 
 export function importPivotReportJson(json: string): { config: PivotConfig; preset: FinancialPresetId } | null {
   try {
     const value = JSON.parse(json);
-    if (value.format !== 'revogrid-pivot-showcase' || value.version !== 1 || typeof value.state !== 'string') return null;
+    if (value.format !== 'revogrid-pivot-showcase' || value.version !== 2 ||
+        value.dataset !== CONTOSO_DATASET_ID || typeof value.state !== 'string') return null;
     return parseSavedReport(value);
   } catch { return null; }
 }
@@ -102,15 +104,6 @@ export function persistPivotState(config: PivotConfig, preset: FinancialPresetId
   } catch {
     return false;
   }
-}
-
-export function activeFinancialFilters(config: PivotConfig): string[] {
-  return Object.entries(config.filterSelections ?? {})
-    .flatMap(([field, selection]) => {
-      if (Array.isArray(selection)) return selection.length ? [`${field}: ${selection.join(', ')}`] : [];
-      if (selection && typeof selection === 'object') return [`${field}: selection excluded`];
-      return [];
-    });
 }
 
 export type ReportAction = 'export-json' | { kind: 'save-named' | 'restore-named' | 'delete-named'; name: string }
