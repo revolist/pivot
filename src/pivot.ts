@@ -2,8 +2,8 @@ import { defineCustomElements } from '@revolist/revogrid/loader';
 import type { PivotConfig, PivotChartRef } from '@revolist/pivot';
 import './financial-pivot-header/financial-pivot-header.scss';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
+import { loadContosoData } from './contoso-data';
 import {
-  activeFinancialFilters,
   hasSavedPivotReport,
   handleReportAction,
   listSavedPivotReports,
@@ -13,6 +13,7 @@ import {
   restorePivotConfig,
 } from './financial.analytics';
 import { exportFinancialCsv, exportFinancialXlsx, mountFinancialChart, printFinancialPivot } from './financial.actions';
+import { createFinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -22,6 +23,7 @@ import {
   FINANCIAL_SHOWCASE_PLUGINS,
   applyFinancialPivotOptions,
   createFinancialPreset,
+  fitFinancialPivotColumns,
   resolveFinancialRows,
   type FinancialPresetId,
 } from './financial.pivot';
@@ -36,8 +38,6 @@ import {
 
 defineCustomElements();
 
-const isSmallScreen = () => window.matchMedia('(max-width: 1439px)').matches;
-
 export function load(
   parentSelector: string,
   rows: any[] | { isDark?: boolean } = [],
@@ -47,10 +47,12 @@ export function load(
   if (!parent) return;
 
   const { isDark } = currentTheme();
-  const data = resolveFinancialRows(Array.isArray(rows) ? rows : undefined);
+  const providedRows = Array.isArray(rows) && rows.length ? rows : undefined;
+  let data = resolveFinancialRows(providedRows);
+  let disposed = false;
   let activePreset: FinancialPresetId = options.initialPreset ?? restoreActivePreset();
   let pivotConfig: PivotConfig = restorePivotConfig(activePreset);
-  let configuratorVisible = !isSmallScreen();
+  let configuratorVisible = false;
   let expanded = false;
   let chartVisible = false;
   let chart: PivotChartRef | undefined;
@@ -66,8 +68,9 @@ export function load(
     chartVisible,
     savedAvailable,
     savedReports: listSavedPivotReports(),
-    activeFilters: activeFinancialFilters(pivotConfig),
   });
+
+  const summaryMount = document.createElement('div');
 
   const chartContainer = document.createElement('div');
   chartContainer.className = 'financial-pivot-chart';
@@ -78,16 +81,23 @@ export function load(
   actionError.className = 'financial-pivot-header__question';
 
   const scrollContainer = document.createElement('div');
-  scrollContainer.className = 'grow min-h-0 overflow-auto';
+  scrollContainer.className = 'financial-pivot-grid-view grow min-h-0 overflow-auto';
   const gridContainer = document.createElement('div');
   gridContainer.className = 'pivot-grid-container h-full overflow-hidden';
   let grid: HTMLRevoGridElement;
+  const fieldsDrawer = createFinancialFieldsDrawer(() => {
+    configuratorVisible = false;
+    applyPivotOptions();
+    refreshLayout();
+  });
 
   function applyPivotOptions() {
+    fitFinancialPivotColumns(grid, gridContainer, pivotConfig);
     grid.pivot = applyFinancialPivotOptions(
       pivotConfig,
       data,
       configuratorVisible,
+      fieldsDrawer.mountTo,
     );
   }
 
@@ -99,12 +109,14 @@ export function load(
       chartVisible,
       savedAvailable,
       savedReports: listSavedPivotReports(),
-      activeFilters: activeFinancialFilters(pivotConfig),
     };
     chartContainer.hidden = !chartVisible;
+    container.classList.toggle('financial-pivot-showcase--chart', chartVisible);
+    scrollContainer.setAttribute('aria-hidden', String(chartVisible));
     Object.assign(container.style, expanded
       ? { position: 'fixed', inset: '8px', zIndex: '1000', background: 'var(--financial-pivot-expanded-background)' }
       : { position: '', inset: '', zIndex: '', background: '' });
+    if (grid) fitFinancialPivotColumns(grid, gridContainer, pivotConfig);
   }
 
   const onPivotConfigUpdate = (event: CustomEvent<PivotConfig>) => {
@@ -126,12 +138,14 @@ export function load(
       columns: FINANCIAL_COLUMNS,
       columnTypes: FINANCIAL_COLUMN_TYPES,
       plugins: FINANCIAL_SHOWCASE_PLUGINS,
+      pivotSummaryPanel: { mountTo: summaryMount },
       pivotCharts: FINANCIAL_PIVOT_CHARTS,
       pivotChartsUi: FINANCIAL_PIVOT_CHARTS_UI,
       pivot: applyFinancialPivotOptions(
         pivotConfig,
         data,
         configuratorVisible,
+        fieldsDrawer.mountTo,
       ),
     });
     grid.addEventListener('pivot-config-update', onPivotConfigUpdate as EventListener);
@@ -152,7 +166,11 @@ export function load(
     replacePivotOptions();
   });
   header.addEventListener(FINANCIAL_PIVOT_CONFIGURATOR_EVENT, () => {
-    configuratorVisible = !configuratorVisible;
+    if (configuratorVisible) fieldsDrawer.hide();
+    else {
+      fieldsDrawer.show(document.activeElement as HTMLElement);
+      configuratorVisible = true;
+    }
     applyPivotOptions();
     refreshLayout();
   });
@@ -171,8 +189,8 @@ export function load(
           activePreset = result.restored.preset;
           replacePivotOptions();
         }
-        actionError.textContent = result.error ?? '';
         refreshLayout();
+        actionError.textContent = result.error ?? '';
         return;
       }
       if (action === 'reset') {
@@ -204,21 +222,39 @@ export function load(
         if (chartVisible && !chart) chart = await mountFinancialChart(grid, chartContainer);
       }
     } catch {
-      actionError.textContent = `Could not complete ${action}.`;
+      actionError.textContent = 'Could not complete this report action. Please try again.';
     }
   });
   scrollContainer.appendChild(gridContainer);
-  container.append(header, actionError, chartContainer, scrollContainer);
+  container.append(header, summaryMount, actionError, chartContainer, scrollContainer);
   parent.appendChild(container);
   refreshLayout();
   initializeGrid();
+  const resizeObserver = new ResizeObserver(() => fitFinancialPivotColumns(grid, gridContainer, pivotConfig));
+  resizeObserver.observe(gridContainer);
+  if (!providedRows) {
+    actionError.textContent = 'Loading Contoso retail data…';
+    void loadContosoData().then((dataset) => {
+      if (disposed) return;
+      data = dataset.rows;
+      grid.source = data;
+      applyPivotOptions();
+      actionError.textContent = '';
+      refreshLayout();
+    }).catch((error) => {
+      if (!disposed) actionError.textContent = `Could not load the Contoso dataset: ${error instanceof Error ? error.message : String(error)}`;
+    });
+  }
   const disconnectTheme = observeCurrentTheme((darkTheme) => {
     grid.theme = darkTheme ? 'darkCompact' : 'compact';
   });
 
   return () => {
+    disposed = true;
     disconnectTheme();
+    resizeObserver.disconnect();
     chart?.destroy();
+    fieldsDrawer.destroy();
     grid.removeEventListener('pivot-config-update', onPivotConfigUpdate as EventListener);
     grid.remove();
     container.remove();

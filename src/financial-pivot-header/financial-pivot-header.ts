@@ -16,10 +16,11 @@ export interface FinancialPivotHeaderState {
   chartVisible?: boolean;
   savedAvailable?: boolean;
   savedReports?: string[];
-  activeFilters?: string[];
 }
 
-export type FinancialPivotHeaderElement = HTMLElement & { state: FinancialPivotHeaderState };
+export type FinancialPivotHeaderElement = HTMLElement & {
+  state: FinancialPivotHeaderState;
+};
 
 const DEFAULT_STATE: FinancialPivotHeaderState = {
   activePreset: 'sales', configuratorVisible: true, expanded: false,
@@ -27,13 +28,31 @@ const DEFAULT_STATE: FinancialPivotHeaderState = {
 
 class FinancialPivotHeader extends HTMLElement {
   private currentState = DEFAULT_STATE;
+  private readonly closeReportOnOutsideClick = (event: PointerEvent) => {
+    const report = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu');
+    if (report?.open && !report.contains(event.target as Node)) report.open = false;
+  };
+  private readonly closeReportOnEscape = (event: KeyboardEvent) => {
+    const report = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu');
+    if (event.key !== 'Escape' || !report?.open) return;
+    report.open = false;
+    report.querySelector<HTMLElement>('summary')?.focus();
+  };
   get state() { return this.currentState; }
   set state(value: FinancialPivotHeaderState) {
     this.currentState = value;
     this.render();
   }
-  connectedCallback() { this.render(); }
-  disconnectedCallback() { this.replaceChildren(); }
+  connectedCallback() {
+    document.addEventListener('pointerdown', this.closeReportOnOutsideClick);
+    document.addEventListener('keydown', this.closeReportOnEscape);
+    this.render();
+  }
+  disconnectedCallback() {
+    document.removeEventListener('pointerdown', this.closeReportOnOutsideClick);
+    document.removeEventListener('keydown', this.closeReportOnEscape);
+    this.replaceChildren();
+  }
 
   private render() {
     const focusedElement = this.contains(document.activeElement)
@@ -45,7 +64,6 @@ class FinancialPivotHeader extends HTMLElement {
     const state = this.currentState;
     const root = element('div', 'financial-pivot-header');
     const toolbar = element('div', 'financial-pivot-header__toolbar');
-    const report = element('div', 'financial-pivot-header__report');
     const presetSwitch = element('div', 'rv-segmented-switch financial-pivot-header__preset-switch');
     presetSwitch.setAttribute('role', 'tablist');
     presetSwitch.setAttribute('aria-label', 'Financial report presets');
@@ -78,72 +96,95 @@ class FinancialPivotHeader extends HTMLElement {
       tabs[next]?.focus();
       tabs[next]?.click();
     });
-    report.append(presetSwitch);
-    const current = FINANCIAL_PRESETS.find((preset) => preset.id === state.activePreset);
-    report.append(element('p', 'financial-pivot-header__question', current?.description ?? 'Explore the report.'));
     const actions = element('div', 'financial-pivot-header__actions');
-    actions.append(
+    const exploreActions = element('div', 'financial-pivot-header__action-group');
+    exploreActions.setAttribute('role', 'group');
+    exploreActions.setAttribute('aria-label', 'Explore report');
+    exploreActions.append(
       actionButton('Fields', () => this.emit(FINANCIAL_PIVOT_CONFIGURATOR_EVENT), 'fields', state.configuratorVisible),
       actionButton('Chart', () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'chart'), 'chart', state.chartVisible),
       actionButton('Export CSV', () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export'), 'export'),
     );
+    const manageActions = element('div', 'financial-pivot-header__action-group financial-pivot-header__action-group--manage');
+    manageActions.setAttribute('role', 'group');
+    manageActions.setAttribute('aria-label', 'Manage report');
     const reportMenu = element('details', 'financial-pivot-header__menu');
     reportMenu.open = !!reportMenuWasOpen;
     const summary = element('summary', 'financial-pivot-header__button', 'Report');
     summary.dataset.action = 'report';
+    summary.setAttribute('aria-label', 'Report actions');
     reportMenu.append(summary);
     const menu = element('div', 'financial-pivot-header__menu-items');
     menu.append(
-      actionButton('Save this report', () => { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'save'); reportMenu.open = false; }, 'save'),
-      actionButton('Restore saved report', () => { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'restore'); reportMenu.open = false; }, 'restore'),
+      element('strong', 'financial-pivot-header__menu-title', 'Manage report'),
+      element('p', 'financial-pivot-header__menu-intro', 'Save your layout here or share it as a file.'),
+      element('span', 'financial-pivot-header__menu-section', 'Saved layouts'),
+    );
+    const menuAction = (label: string, description: string, onClick: () => void, action: string) => {
+      const button = actionButton(label, onClick, action);
+      button.classList.add('financial-pivot-header__menu-action');
+      button.append(element('small', '', description));
+      return button;
+    };
+    menu.append(
+      menuAction('Save this report', 'Remember the current layout in this browser.', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'save'); }, 'save'),
+      menuAction('Restore saved report', 'Return to the last saved layout.', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'restore'); }, 'restore'),
     );
     (menu.lastElementChild as HTMLButtonElement).disabled = !state.savedAvailable;
+    const nameLabel = element('label', 'financial-pivot-header__name-label', 'Save a named layout');
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.placeholder = 'Report name';
     nameInput.maxLength = 80;
     nameInput.setAttribute('aria-label', 'Report name');
-    menu.append(nameInput, actionButton('Save named report', () => {
+    nameLabel.append(nameInput);
+    menu.append(nameLabel, menuAction('Save named report', 'Keep another layout alongside your quick save.', () => {
       const name = nameInput.value.trim();
-      if (name) { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'save-named', name }); reportMenu.open = false; }
-      else nameInput.focus();
+      if (name) { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'save-named', name }); }
+      else { nameInput.setCustomValidity('Enter a report name first.'); nameInput.reportValidity(); nameInput.focus(); }
     }, 'save-named'));
+    nameInput.addEventListener('input', () => nameInput.setCustomValidity(''));
+    if (!(state.savedReports ?? []).length) menu.append(element('p', 'financial-pivot-header__menu-intro', 'No named reports saved yet.'));
     for (const name of state.savedReports ?? []) {
       const row = element('div', 'financial-pivot-header__saved-row');
-      row.append(actionButton(`Open ${name}`, () => { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'restore-named', name }); reportMenu.open = false; }, `open-${name}`));
+      row.append(menuAction(`Open ${name}`, 'Load this layout', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'restore-named', name }); }, `open-${name}`));
       row.append(actionButton(`Delete ${name}`, () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'delete-named', name }), `delete-${name}`));
       menu.append(row);
     }
+    menu.append(element('span', 'financial-pivot-header__menu-section', 'Share and export'));
     menu.append(
-      actionButton('Download report JSON', () => { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export-json'); reportMenu.open = false; }, 'export-json'),
-      actionButton('Export XLSX (visible result)', () => { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export-xlsx'); reportMenu.open = false; }, 'export-xlsx'),
-      actionButton('Print / Save PDF (visible result)', () => { this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'print'); reportMenu.open = false; }, 'print'),
-      actionButton('Import report JSON', () => {
+      menuAction('Download report JSON', 'Share the report layout as a file.', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export-json'); }, 'export-json'),
+      menuAction('Export XLSX (visible result)', 'Download the current grid values.', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export-xlsx'); }, 'export-xlsx'),
+      menuAction('Print / Save PDF (visible result)', 'Open browser printing for the current grid.', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'print'); }, 'print'),
+      menuAction('Import report JSON', 'Choose a previously downloaded report file.', () => {
         const picker = document.createElement('input');
         picker.type = 'file'; picker.accept = '.json,application/json';
         picker.addEventListener('change', async () => {
           const file = picker.files?.[0];
           if (file) this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'import-json', json: await file.text() });
         });
-        picker.click(); reportMenu.open = false;
+        reportMenu.open = false;
+        picker.click();
       }, 'import-json'),
     );
     reportMenu.append(menu);
-    actions.append(reportMenu,
+    const expandLabel = state.expanded ? 'Exit expanded workspace' : 'Expand workspace';
+    const expandButton = actionButton(expandLabel,
+      () => this.emit(FINANCIAL_PIVOT_EXPANDED_EVENT), 'expanded', state.expanded);
+    expandButton.classList.add('financial-pivot-header__button--expand');
+    expandButton.setAttribute('aria-label', expandLabel);
+    expandButton.title = expandLabel;
+    expandButton.firstElementChild!.textContent = state.expanded ? '↙' : '↗';
+    expandButton.firstElementChild!.setAttribute('aria-hidden', 'true');
+    manageActions.append(reportMenu,
       actionButton('Reset', () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'reset'), 'reset'),
-      actionButton(state.expanded ? 'Exit expanded workspace' : 'Expand workspace',
-        () => this.emit(FINANCIAL_PIVOT_EXPANDED_EVENT), 'expanded', state.expanded),
+      expandButton,
     );
-    toolbar.append(report, actions);
-    root.append(toolbar);
-    const filters = element('div', 'financial-pivot-header__filters');
-    filters.setAttribute('aria-label', 'Active filters');
-    filters.append(element('span', 'financial-pivot-header__filters-label', 'Active filters'));
-    for (const filter of state.activeFilters ?? []) {
-      filters.append(element('span', 'financial-pivot-header__filter', filter));
-    }
-    if (!state.activeFilters?.length) filters.append(element('span', '', 'None'));
-    root.append(filters);
+    actions.append(exploreActions, manageActions);
+    toolbar.append(presetSwitch, actions);
+    const surface = element('div', 'financial-pivot-header__surface');
+    surface.append(toolbar);
+    root.append(surface);
     this.replaceChildren(root);
     if (focusedPreset) this.querySelector<HTMLElement>(`[data-value="${focusedPreset}"]`)?.focus();
     else if (focusedReportName) nameInput.focus();

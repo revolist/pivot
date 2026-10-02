@@ -2,10 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  AfterViewInit,
   ElementRef,
   Input,
   NO_ERRORS_SCHEMA,
   OnDestroy,
+  OnInit,
   signal,
   ViewChild,
   ViewEncapsulation,
@@ -14,8 +16,8 @@ import { NgIf } from '@angular/common';
 import { RevoGrid, type DataType } from '@revolist/angular-datagrid';
 import type { PivotConfig, PivotChartRef } from '@revolist/pivot';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
+import { loadContosoData } from './contoso-data';
 import {
-  activeFinancialFilters,
   hasSavedPivotReport,
   handleReportAction,
   listSavedPivotReports,
@@ -25,6 +27,7 @@ import {
   restorePivotConfig,
 } from './financial.analytics';
 import { exportFinancialCsv, exportFinancialXlsx, mountFinancialChart, printFinancialPivot } from './financial.actions';
+import { createFinancialFieldsDrawer, type FinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -34,6 +37,7 @@ import {
   FINANCIAL_SHOWCASE_PLUGINS,
   applyFinancialPivotOptions,
   createFinancialPreset,
+  financialPivotColumnSize,
   resolveFinancialRows,
   type FinancialPresetId,
 } from './financial.pivot';
@@ -44,8 +48,6 @@ import {
 } from './financial-pivot-header/financial-pivot-header';
 
 defineFinancialPivotHeaderElement();
-
-const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1439px)').matches;
 
 @Component({
   selector: 'pivot-showcase-grid',
@@ -58,6 +60,7 @@ const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('
   template: `
     <div
       class="financial-pivot-showcase grow flex flex-col gap-2 h-full p-2 box-border"
+      [class.financial-pivot-showcase--chart]="chartVisible()"
       [style.position]="expanded() ? 'fixed' : null"
       [style.inset]="expanded() ? '8px' : null"
       [style.z-index]="expanded() ? 1000 : null"
@@ -66,16 +69,19 @@ const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('
       <financial-pivot-header
         [state]="headerState"
         (financial-pivot-preset-select)="selectPreset($any($event).detail)"
-        (financial-pivot-configurator-toggle)="configuratorVisible.set(!configuratorVisible())"
+        (financial-pivot-configurator-toggle)="toggleFields()"
         (financial-pivot-expanded-toggle)="expanded.set(!expanded())"
         (financial-pivot-action)="onAction($any($event).detail)"
       ></financial-pivot-header>
+      <div #summaryMount></div>
+      <div *ngIf="loading()" role="status" class="financial-pivot-header__question">Loading Contoso retail data…</div>
+      <div *ngIf="loadError()" role="alert" class="financial-pivot-header__question">{{ loadError() }}</div>
       <div *ngIf="actionError()" role="alert" class="financial-pivot-header__question">{{ actionError() }}</div>
       <div #chartContainer class="financial-pivot-chart" aria-label="Pivot chart" [hidden]="!chartVisible()"></div>
 
-      <div class="grow min-h-0 overflow-auto">
+      <div class="financial-pivot-grid-view grow min-h-0 overflow-auto" [attr.aria-hidden]="chartVisible() ? 'true' : null">
         <div
-          class="pivot-grid-container h-full overflow-hidden"
+          #gridHost class="pivot-grid-container h-full overflow-hidden"
         >
           <revo-grid
             #gridElement
@@ -85,10 +91,11 @@ const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('
             [resize]="true"
             [filter]="true"
             [multiRowHeader]="multiRowHeader"
-            [colSize]="128"
+            [colSize]="columnSize()"
             [source]="sourceRows()"
             [columns]="FINANCIAL_COLUMNS"
             [pivot]="pivot()"
+            [pivotSummaryPanel]="{ mountTo: summaryMount }"
             [pivotCharts]="pivotCharts"
             [pivotChartsUi]="pivotChartsUi"
             [theme]="theme()"
@@ -102,7 +109,7 @@ const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('
     </div>
   `,
 })
-export class PivotShowcaseGridComponent implements OnDestroy {
+export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDestroy {
   private initialPresetValue: FinancialPresetId = 'sales';
   @Input() set initialPreset(value: FinancialPresetId) {
     if (value && value !== this.initialPresetValue) {
@@ -110,18 +117,42 @@ export class PivotShowcaseGridComponent implements OnDestroy {
       this.selectPreset(value);
     }
   }
-  private benchmarkSource: DataType[] = resolveFinancialRows();
-  readonly sourceRows = signal<DataType[]>(this.benchmarkSource);
+  readonly sourceRows = signal<DataType[]>(resolveFinancialRows());
+  private suppliedRows = false;
+  private disposed = false;
 
   @Input() set rows(value: DataType[]) {
-    this.benchmarkSource = resolveFinancialRows(value);
-    this.sourceRows.set(this.benchmarkSource);
+    this.suppliedRows = true;
+    this.sourceRows.set(resolveFinancialRows(value));
+  }
+
+  readonly loading = signal(true);
+  readonly loadError = signal('');
+  readonly actionError = signal('');
+
+  ngOnInit(): void {
+    if (this.suppliedRows) { this.loading.set(false); return; }
+    void loadContosoData().then((dataset) => {
+      if (this.disposed) return;
+      this.sourceRows.set(dataset.rows);
+      this.loading.set(false);
+    }).catch((error) => {
+      if (this.disposed) return;
+      this.loadError.set(`Could not load the Contoso dataset: ${error instanceof Error ? error.message : String(error)}`);
+      this.loading.set(false);
+    });
   }
 
   @ViewChild('gridElement', { read: ElementRef })
   gridElement?: ElementRef<HTMLRevoGridElement & { pivot?: PivotConfig }>;
+  @ViewChild('gridHost', { read: ElementRef }) gridHost?: ElementRef<HTMLElement>;
+  private gridResizeObserver?: ResizeObserver;
+  private fitColumns() {
+    if (this.gridHost) this.columnSize.set(financialPivotColumnSize(this.gridHost.nativeElement, this.pivotSignal()));
+  }
 
   readonly FINANCIAL_COLUMNS = FINANCIAL_COLUMNS;
+  readonly columnSize = signal(128);
   readonly columnTypes = FINANCIAL_COLUMN_TYPES;
   readonly multiRowHeader = FINANCIAL_MULTI_ROW_HEADER;
   readonly pivotCharts = FINANCIAL_PIVOT_CHARTS;
@@ -133,13 +164,14 @@ export class PivotShowcaseGridComponent implements OnDestroy {
 
   readonly activePreset = signal<FinancialPresetId>(restoreActivePreset());
   readonly pivotSignal = signal<PivotConfig>(restorePivotConfig(this.activePreset()));
-  readonly configuratorVisible = signal(!isSmallScreen());
+  readonly configuratorVisible = signal(false);
+  readonly configuratorMount = signal<HTMLElement | undefined>(undefined);
+  private fieldsDrawer?: FinancialFieldsDrawer;
   readonly expanded = signal(false);
 
   readonly chartVisible = signal(false);
   readonly savedAvailable = signal(hasSavedPivotReport());
   readonly reportsRevision = signal(0);
-  readonly actionError = signal('');
   private chart?: PivotChartRef;
 
   @ViewChild('chartContainer', { read: ElementRef }) chartContainer?: ElementRef<HTMLElement>;
@@ -153,7 +185,6 @@ export class PivotShowcaseGridComponent implements OnDestroy {
       chartVisible: this.chartVisible(),
       savedAvailable: this.savedAvailable(),
       savedReports: listSavedPivotReports(),
-      activeFilters: activeFinancialFilters(this.pivotSignal()),
     };
   }
 
@@ -161,10 +192,30 @@ export class PivotShowcaseGridComponent implements OnDestroy {
     this.pivotSignal(),
     this.sourceRows(),
     this.configuratorVisible(),
+    this.configuratorMount(),
   ));
+
+  ngAfterViewInit(): void {
+    this.fieldsDrawer = createFinancialFieldsDrawer(() => this.configuratorVisible.set(false));
+    this.configuratorMount.set(this.fieldsDrawer.mountTo);
+    if (this.gridHost) {
+      this.gridResizeObserver = new ResizeObserver(() => this.fitColumns());
+      this.gridResizeObserver.observe(this.gridHost.nativeElement);
+      this.fitColumns();
+    }
+  }
+
+  toggleFields() {
+    if (this.configuratorVisible()) this.fieldsDrawer?.hide();
+    else {
+      this.fieldsDrawer?.show(document.activeElement as HTMLElement);
+      this.configuratorVisible.set(true);
+    }
+  }
 
   configUpdate(event: CustomEvent<PivotConfig>) {
     this.pivotSignal.set(event.detail || createFinancialPreset());
+    this.fitColumns();
   }
 
   selectPreset(id: FinancialPresetId) {
@@ -177,8 +228,8 @@ export class PivotShowcaseGridComponent implements OnDestroy {
       if (action === 'export-json' || typeof action === 'object') {
         const result = handleReportAction(action, this.pivotSignal(), this.activePreset());
         if (result.restored) this.replacePivot(result.restored.config, result.restored.preset);
-        this.actionError.set(result.error ?? '');
         this.reportsRevision.update((value) => value + 1);
+        this.actionError.set(result.error ?? '');
         return;
       }
       if (action === 'reset') this.selectPreset(this.initialPresetValue);
@@ -201,7 +252,7 @@ export class PivotShowcaseGridComponent implements OnDestroy {
           this.chart = await mountFinancialChart(this.gridElement.nativeElement, this.chartContainer.nativeElement);
         }
       }
-    } catch { this.actionError.set(`Could not complete ${action}.`); }
+    } catch { this.actionError.set('Could not complete this report action. Please try again.'); }
   }
 
   private replacePivot(config: PivotConfig, preset: FinancialPresetId) {
@@ -209,10 +260,14 @@ export class PivotShowcaseGridComponent implements OnDestroy {
     window.setTimeout(() => {
       this.pivotSignal.set(config);
       this.activePreset.set(preset);
+      this.fitColumns();
     });
   }
 
   ngOnDestroy(): void {
+    this.fieldsDrawer?.destroy();
+    this.gridResizeObserver?.disconnect();
+    this.disposed = true;
     this.chart?.destroy();
     this.disconnectTheme();
   }

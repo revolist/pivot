@@ -104,6 +104,17 @@ starts in [`src/pivot.ts`](./src/pivot.ts), with the other framework entry point
 linked in the table above. You can also open the [hosted Pivot
 example](https://pivot.rv-grid.com/demo/) without running the repository.
 
+The focused Pivot examples are owned by this repository:
+
+| Example | Source | Start command |
+| --- | --- | --- |
+| Support operations | [`examples/operations`](./examples/operations/) | `pnpm --dir examples/operations dev` |
+| Client and remote scale | [`examples/scale`](./examples/scale/) | `pnpm --dir examples/scale dev` |
+| CSV and JSON import | [`examples/import`](./examples/import/) | `pnpm --dir examples/import dev` |
+
+Run `pnpm install` at the repository root first. The remote scale example also
+needs `pnpm --dir examples/scale backend` in a second terminal.
+
 ## Resources
 
 - [Pivot documentation](https://pro.rv-grid.com/guides/pivot/)

@@ -1,19 +1,23 @@
 <template>
   <div
     class="financial-pivot-showcase grow flex flex-col gap-2 h-full box-border"
+    :class="{ 'financial-pivot-showcase--chart': chartVisible }"
     :style="expandedStyle"
   >
     <financial-pivot-header
       :state.prop="headerState"
       @financial-pivot-preset-select="onPresetSelect"
-      @financial-pivot-configurator-toggle="configuratorVisible = !configuratorVisible"
+      @financial-pivot-configurator-toggle="toggleFields"
       @financial-pivot-expanded-toggle="expanded = !expanded"
       @financial-pivot-action="onAction"
     />
+    <div ref="summaryMount" />
+    <div v-if="loading" role="status" class="financial-pivot-header__question">Loading Contoso retail data…</div>
+    <div v-if="loadError" role="alert" class="financial-pivot-header__question">{{ loadError }}</div>
     <div v-if="actionError" role="alert" class="financial-pivot-header__question">{{ actionError }}</div>
     <div v-show="chartVisible" ref="chartContainer" class="financial-pivot-chart" aria-label="Pivot chart" />
 
-    <div class="grow min-h-0 overflow-auto">
+    <div v-if="!loading && !loadError" class="financial-pivot-grid-view grow min-h-0 overflow-auto" :aria-hidden="chartVisible">
       <div
         ref="gridHost"
         class="pivot-grid-container h-full overflow-hidden gap-1"
@@ -25,10 +29,11 @@
           resize
           filter
           :multi-row-header.prop="FINANCIAL_MULTI_ROW_HEADER"
-          :colSize="128"
+          :colSize="columnSize"
           :source="rows"
           :columns="FINANCIAL_COLUMNS"
           :pivot.prop="pivot"
+          :pivot-summary-panel.prop="summaryOptions"
           :pivot-charts.prop="FINANCIAL_PIVOT_CHARTS"
           :pivot-charts-ui.prop="FINANCIAL_PIVOT_CHARTS_UI"
           :theme="isDark ? 'darkCompact' : 'compact'"
@@ -43,12 +48,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import RevoGrid from '@revolist/vue3-datagrid';
 import type { PivotConfig, PivotChartRef } from '@revolist/pivot';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
+import { loadContosoData } from './contoso-data';
 import {
-  activeFinancialFilters,
   hasSavedPivotReport,
   handleReportAction,
   listSavedPivotReports,
@@ -58,6 +63,7 @@ import {
   restorePivotConfig,
 } from './financial.analytics';
 import { exportFinancialCsv, exportFinancialXlsx, mountFinancialChart, printFinancialPivot } from './financial.actions';
+import { createFinancialFieldsDrawer, type FinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -67,6 +73,7 @@ import {
   FINANCIAL_SHOWCASE_PLUGINS,
   applyFinancialPivotOptions,
   createFinancialPreset,
+  financialPivotColumnSize,
   resolveFinancialRows,
   type FinancialPresetId,
 } from './financial.pivot';
@@ -83,30 +90,57 @@ let disconnectTheme: (() => void) | undefined;
 const props = defineProps<{ rows?: any[]; initialPreset?: FinancialPresetId }>();
 const initialRows = resolveFinancialRows(props.rows);
 const rows = shallowRef(initialRows);
-const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1439px)').matches;
+const loading = ref(!props.rows);
+const loadError = ref('');
+const actionError = ref('');
+let fieldsDrawer: FinancialFieldsDrawer | undefined;
+const configuratorMount = shallowRef<HTMLElement>();
 
 onMounted(() => {
+  fieldsDrawer = createFinancialFieldsDrawer(() => { configuratorVisible.value = false; });
+  configuratorMount.value = fieldsDrawer.mountTo;
   disconnectTheme = observeCurrentTheme((value) => {
     isDark.value = value;
   });
+  if (!props.rows) {
+    void loadContosoData().then((data) => {
+      rows.value = data.rows;
+    }).catch((error) => {
+      loadError.value = `Could not load the Contoso dataset: ${error instanceof Error ? error.message : String(error)}`;
+    }).finally(() => { loading.value = false; });
+  }
 });
-onBeforeUnmount(() => disconnectTheme?.());
+onBeforeUnmount(() => { disconnectTheme?.(); fieldsDrawer?.destroy(); gridResizeObserver?.disconnect(); });
 
 const activePreset = ref<FinancialPresetId>(props.initialPreset ?? restoreActivePreset());
 const pivotConfig = shallowRef<PivotConfig>(restorePivotConfig(activePreset.value));
-const configuratorVisible = ref(!isSmallScreen());
+const configuratorVisible = ref(false);
 const expanded = ref(false);
 const chartVisible = ref(false);
 const chartContainer = ref<HTMLElement>();
 let chart: PivotChartRef | undefined;
 const savedAvailable = ref(hasSavedPivotReport());
 const reportsRevision = ref(0);
-const actionError = ref('');
 const gridHost = ref<HTMLElement>();
+const columnSize = ref(128);
 // The Vue wrapper ref is a component instance; actions need the public grid element API.
 const gridElement = computed(() => gridHost.value?.querySelector('revo-grid') as HTMLRevoGridElement | undefined);
+let gridResizeObserver: ResizeObserver | undefined;
+const fitColumns = () => {
+  if (gridHost.value) columnSize.value = financialPivotColumnSize(gridHost.value, pivotConfig.value);
+};
+watch(gridHost, (host) => {
+  gridResizeObserver?.disconnect();
+  if (!host) return;
+  gridResizeObserver = new ResizeObserver(fitColumns);
+  gridResizeObserver.observe(host);
+  void nextTick(fitColumns);
+});
+watch(pivotConfig, () => { void nextTick(fitColumns); });
 const columnTypes = ref(FINANCIAL_COLUMN_TYPES);
 const plugins = FINANCIAL_SHOWCASE_PLUGINS;
+const summaryMount = shallowRef<HTMLElement>();
+const summaryOptions = computed(() => ({ mountTo: summaryMount.value }));
 const headerState = computed<FinancialPivotHeaderState>(() => ({
   activePreset: activePreset.value,
   configuratorVisible: configuratorVisible.value,
@@ -114,7 +148,6 @@ const headerState = computed<FinancialPivotHeaderState>(() => ({
   chartVisible: chartVisible.value,
   savedAvailable: savedAvailable.value,
   savedReports: (reportsRevision.value, listSavedPivotReports()),
-  activeFilters: activeFinancialFilters(pivotConfig.value),
 }));
 
 const pivot = computed(() =>
@@ -122,8 +155,17 @@ const pivot = computed(() =>
     pivotConfig.value,
     rows.value,
     configuratorVisible.value,
+    configuratorMount.value,
   ),
 );
+
+const toggleFields = () => {
+  if (configuratorVisible.value) fieldsDrawer?.hide();
+  else {
+    fieldsDrawer?.show(document.activeElement as HTMLElement);
+    configuratorVisible.value = true;
+  }
+};
 
 const expandedStyle = computed(() => expanded.value
   ? { position: 'fixed' as const, inset: '8px', zIndex: 1000, background: 'var(--financial-pivot-expanded-background)' }
@@ -159,9 +201,9 @@ const onAction = async (event: Event) => {
           activePreset.value = result.restored!.preset;
         });
       }
-      actionError.value = result.error ?? '';
       savedAvailable.value = hasSavedPivotReport();
       reportsRevision.value++;
+      actionError.value = result.error ?? '';
       return;
     }
     if (action === 'reset') selectPreset(props.initialPreset ?? 'sales');
@@ -190,7 +232,7 @@ const onAction = async (event: Event) => {
       }
     }
   } catch {
-    actionError.value = `Could not complete ${action}.`;
+    actionError.value = 'Could not complete this report action. Please try again.';
   }
 };
 onBeforeUnmount(() => chart?.destroy());
