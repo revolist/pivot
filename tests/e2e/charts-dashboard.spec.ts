@@ -29,16 +29,30 @@ test('linked charts and Pivot follow the dashboard controls', async ({ page }) =
   await expect(page.locator('.pivot-dashboard')).toHaveAttribute('data-chart-stage', 'ready');
   await expect(page.getByTestId('quarter-chart').locator('svg')).toContainText('Canada');
   await expect(page.getByText(/filtered lines · 2025 · all brands/)).toBeVisible();
+  const donut = page.getByTestId('share-chart');
+  await expect(donut.locator('[data-pivot-chart-part-to-whole-mark="donut"]')).toHaveCount(4);
+  for (const quarter of ['Q1', 'Q2', 'Q3', 'Q4']) await expect(donut.locator('svg')).toContainText(quarter);
+  const donutValues = () => donut.locator('[data-pivot-chart-part-to-whole-mark="donut"]')
+    .evaluateAll(marks => marks.map(mark => mark.getAttribute('aria-label')));
+  const firstDonut = await donutValues();
+  expect(firstDonut).toEqual([
+    'Q1, Revenue (USD): $2,050,089.81',
+    'Q2, Revenue (USD): $1,627,041.00',
+    'Q3, Revenue (USD): $1,908,962.93',
+    'Q4, Revenue (USD): $2,190,805.54',
+  ]);
   const firstChart = await page.getByTestId('quarter-chart').locator('svg').innerHTML();
 
   await page.getByRole('combobox', { name: 'Brand' }).selectOption('Contoso');
   await expect(page.getByText(/filtered lines · 2025 · Contoso/)).toBeVisible();
   await expect.poll(async () => page.getByTestId('quarter-chart').locator('svg').innerHTML())
     .not.toBe(firstChart);
+  await expect.poll(donutValues).not.toEqual(firstDonut);
+  await expect(donut.locator('[data-pivot-chart-part-to-whole-mark="donut"]')).toHaveCount(4);
   const filteredChart = await page.getByTestId('quarter-chart').locator('svg').innerHTML();
   await page.getByRole('radio', { name: 'Categories' }).check();
   await expect(page.getByRole('heading', { name: 'Quarterly revenue by category' })).toBeVisible();
-  await expect(page.locator('.dashboard-pivot-summary')).toContainText('Category');
+  await expect(page.locator('.pivot-dashboard .pivot-summary-panel')).toHaveCount(0);
   await expect.poll(async () => page.getByTestId('quarter-chart').locator('svg').innerHTML())
     .not.toBe(filteredChart);
   await expect(page.getByTestId('quarter-chart').locator('svg')).toContainText('Computers');
@@ -48,5 +62,6 @@ test('linked charts and Pivot follow the dashboard controls', async ({ page }) =
   await page.getByRole('button', { name: 'Reset report' }).click();
   await expect(page.getByText(/filtered lines · 2025 · all brands/)).toBeVisible();
   await expect(page.getByTestId('quarter-chart').locator('svg')).toContainText('Canada');
+  await expect.poll(donutValues).toEqual(firstDonut);
   expect(errors).toEqual([]);
 });

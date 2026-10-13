@@ -57,7 +57,7 @@ export function ticketsInScope(tickets: Ticket[], scope: TicketScope): Ticket[] 
 /** Resolve the public Pivot row/column axis paths for this fixed Team × Priority report. */
 export function ticketsForPivotCell(
   source: Ticket[],
-  cell: { rowPath: readonly unknown[]; columnPath: readonly unknown[] },
+  cell: { rowPath: readonly unknown[]; columnPath: readonly unknown[]; dataIndex?: number },
 ): Ticket[] {
   const { rowPath, columnPath } = cell;
   if (rowPath.length > 1 || columnPath.length > 1) return [];
@@ -65,10 +65,14 @@ export function ticketsForPivotCell(
   const priority = columnPath[0];
   if (team !== undefined && !TEAMS.includes(team as TicketTeam)) return [];
   if (priority !== undefined && !PRIORITIES.includes(priority as TicketPriority)) return [];
-  return source.filter(ticket =>
+  const records = source.filter(ticket =>
     (team === undefined || ticket.Team === team) &&
     (priority === undefined || ticket.Priority === priority),
   );
+  // Match the configured measure order: count, average resolution, breach count.
+  if (cell.dataIndex === 1) return records.filter(ticket => ticket['Resolution Hours'] !== null);
+  if (cell.dataIndex === 2) return records.filter(ticket => ticket['SLA Breach Count'] === 1);
+  return records;
 }
 
 export function pageTickets(tickets: Ticket[], page: number, pageSize: number): Ticket[] {

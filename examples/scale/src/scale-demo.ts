@@ -1,3 +1,5 @@
+import { currentTheme, observeCurrentTheme } from '../../../src/shared/theme';
+/** Client workload UI and measurements. Data generation and Pivot configuration are separate so you can replace either without rewriting the view. */
 import { defineCustomElements } from '@revolist/revogrid/loader';
 import {
   PIVOT_MODEL_CHANGED_EVENT,
@@ -15,7 +17,7 @@ defineCustomElements();
 
 export function mountScaleDemo(app: HTMLElement) {
 app.innerHTML = `
-  <section class="scale-demo" aria-label="Pivot at scale">
+  <section class="scale-demo scale-client-demo" aria-label="Pivot at scale">
     <header class="scale-header">
       <p class="eyebrow">Pivot at scale · synthetic USD transactions</p>
       <h1>Explore how workload size affects a Pivot report</h1>
@@ -29,10 +31,12 @@ app.innerHTML = `
       </nav>
       <p id="status" class="scale-status" role="status">Preparing 10K rows…</p>
       <div class="scale-actions">
+        <button type="button" data-action="fields" aria-pressed="false">Show fields</button>
         <button type="button" data-action="interaction">Switch row hierarchy</button>
       </div>
     </div>
     <div id="grid-host" class="grid-host"></div>
+    <p class="scale-swipe-hint">Swipe the report sideways to see the remaining periods and grand total.</p>
     <section class="scale-performance" aria-label="Browser performance metrics">
       <div class="scale-performance-heading">
         <strong>Performance</strong>
@@ -63,6 +67,8 @@ app.innerHTML = `
 
 const status = app.querySelector<HTMLElement>('#status')!;
 const gridHost = app.querySelector<HTMLElement>('#grid-host')!;
+const clientDemo = app.querySelector<HTMLElement>('.scale-client-demo')!;
+const fieldsButton = app.querySelector<HTMLButtonElement>('[data-action="fields"]')!;
 const output = (id: string, value: string) => { app.querySelector<HTMLElement>(`#${id}`)!.textContent = value; };
 const formatMs = (value: number) => `${value.toFixed(1)} ms`;
 const formatCount = (value: number) => new Intl.NumberFormat('en-US').format(value);
@@ -71,6 +77,12 @@ let currentCount = 0;
 let generation = 0;
 let layout = false;
 let runToken = 0;
+
+  // Keep the host controls and existing grids in sync; new grids read the current preference.
+  const stopTheme = observeCurrentTheme(isDark => {
+    app.querySelector('.scale-client-demo')!.classList.toggle('is-dark', isDark);
+    if (grid) grid.theme = isDark ? 'darkCompact' : 'compact';
+  });
 
 const workloadTabs = Array.from(app.querySelectorAll<HTMLButtonElement>('.scale-workloads button'));
 function setActiveWorkload(count: number | null) {
@@ -92,6 +104,7 @@ function makeGrid(config: PivotConfig): HTMLRevoGridElement {
 
 function createGrid(config: PivotConfig): HTMLRevoGridElement {
   const next = document.createElement('revo-grid');
+  next.theme = currentTheme().isDark() ? 'darkCompact' : 'compact';
   next.className = 'scale-grid';
   next.plugins = [PivotPlugin];
   next.pivot = config;
@@ -196,8 +209,13 @@ workloadTabs.forEach((button) => {
   });
 });
 app.querySelector<HTMLButtonElement>('[data-action="interaction"]')!.addEventListener('click', () => void switchLayout());
+fieldsButton.addEventListener('click', () => {
+  const visible = clientDemo.classList.toggle('fields-visible');
+  fieldsButton.setAttribute('aria-pressed', String(visible));
+  fieldsButton.textContent = visible ? 'Hide fields' : 'Show fields';
+});
 
 void runClient(10_000);
 
-  return () => { ++runToken; grid?.remove(); app.replaceChildren(); };
+  return () => { stopTheme(); ++runToken; grid?.remove(); app.replaceChildren(); };
 }

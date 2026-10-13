@@ -11,7 +11,9 @@ describe('main sales report', () => {
     expect(report.columnLevels?.[0]).toMatchObject({ collapsible: true, collapsed: true });
     // New hierarchy levels (for example Year > Quarter > Month) start closed.
     expect(report.columnCollapse).toMatchObject({ enabled: true, collapsed: true });
-    expect(report.values).toEqual([{ prop: 'Revenue', aggregator: 'sum', label: 'Revenue (USD)' }]);
+    expect(report.values).toMatchObject([{ prop: 'Revenue', aggregator: 'sum', label: 'Revenue (USD)',
+      format: { preset: 'currency', currency: 'USD', locale: 'en-US' },
+    }]);
     expect(report.dimensions?.find((dimension) => dimension.prop === 'Revenue')?.filter).toBe(false);
     expect(report.contextMenu).toMatchObject({ drillThrough: { columns: [
       'Order ID', 'Line ID', 'Date', 'Country', 'Store Country',
@@ -20,6 +22,14 @@ describe('main sales report', () => {
     ] } });
     expect(report.filterSelections).toEqual({ Year: [2025] });
     expect(restorePivotConfig('sales')).toEqual(report);
+  });
+
+  it('declares print formats without replacing calculated percent or rank formats', () => {
+    expect(createFinancialPreset('product').values[1].format).toMatchObject({ preset: 'number', options: { maximumFractionDigits: 0 } });
+    expect(createFinancialPreset('contribution').values[0].format?.preset).toBe('percent');
+    expect(createFinancialPreset('yoy').values[1].format?.preset).toBe('percent');
+    expect(createFinancialPreset('ranking').values[1].format).toMatchObject({ preset: 'number', options: { maximumFractionDigits: 0 } });
+    expect(createFinancialPreset('profitability').values.every(value => value.format?.preset === 'currency')).toBe(true);
   });
 
   it('uses explicitly supplied Contoso rows while the browser loads its local asset', () => {

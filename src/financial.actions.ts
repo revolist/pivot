@@ -1,36 +1,31 @@
-import { exportVisiblePivotToCsv, mountPivotChart, type PivotChartRef } from '@revolist/pivot';
-import { GROUP_DEPTH, getGroupingName, isGrouping, type ColumnGrouping, type ColumnRegular, type DataType } from '@revolist/revogrid';
-import { exportVisiblePivotToXlsx } from './pivot.xlsx-export';
+import { PivotPlugin, mountPivotChart, type PivotChartRef } from '@revolist/pivot';
+export { buildPivotPrintTable } from '@revolist/pivot';
 
-/** USD source amounts can accumulate binary floating-point noise; export cents. */
-function exportRows(rows: Record<string, unknown>[] | undefined) {
-  return rows?.map((row) => {
-    const copy = { ...row };
-    for (const [key, value] of Object.entries(copy)) {
-      if (typeof value === 'number' && Number.isFinite(value)) copy[key] = Number(value.toFixed(2));
-    }
-    return copy;
-  });
+/** Find the active public export owner for this grid. */
+async function getPivotPlugin(grid: HTMLRevoGridElement) {
+  const pivot = (await grid.getPlugins()).find((plugin) => plugin instanceof PivotPlugin);
+  if (!pivot) throw new Error('The Pivot report is not available.');
+  return pivot;
 }
 
-async function visibleResult(grid: HTMLRevoGridElement) {
-  return {
-    columns: await grid.getColumns(),
-    source: exportRows(await grid.getVisibleSource()),
-    pinnedBottomSource: exportRows(grid.pinnedBottomSource),
-  };
+/** Explain chart safety limits without dropping data or leaving an empty chart view. */
+export function financialActionError(error: unknown): string {
+  if (error && typeof error === 'object' && 'code' in error && error.code === 'LIMIT_EXCEEDED') {
+    return 'This report is too detailed to chart. Use Fields to filter the data or choose a grouped report, then open Chart again.';
+  }
+  return 'Could not complete this report action. Please try again.';
 }
 
-export async function mountFinancialChart(grid: HTMLRevoGridElement, container: HTMLElement): Promise<PivotChartRef> {
+export async function mountFinancialChart(grid: HTMLRevoGridElement, container: HTMLElement, title = 'Pivot Table Demo'): Promise<PivotChartRef> {
   return mountPivotChart(grid, {
     container,
     controls: 'standard',
-    presentation: { title: 'Current Pivot report' },
+    presentation: { title },
   });
 }
 
 export async function exportFinancialCsv(grid: HTMLRevoGridElement): Promise<void> {
-  const csv = exportVisiblePivotToCsv({ ...await visibleResult(grid), bom: true });
+  const csv = (await getPivotPlugin(grid)).exportCsv({ bom: true });
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   const anchor = document.createElement('a');
   anchor.href = url;
@@ -40,7 +35,7 @@ export async function exportFinancialCsv(grid: HTMLRevoGridElement): Promise<voi
 }
 
 export async function exportFinancialXlsx(grid: HTMLRevoGridElement): Promise<void> {
-  const bytes = exportVisiblePivotToXlsx(await visibleResult(grid));
+  const bytes = (await getPivotPlugin(grid)).exportXlsx();
   const url = URL.createObjectURL(new Blob([bytes as BlobPart], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   }));
@@ -51,57 +46,9 @@ export async function exportFinancialXlsx(grid: HTMLRevoGridElement): Promise<vo
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
-  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-})[character]!);
-
-type PivotColumn = ColumnGrouping | ColumnRegular;
-const isGroup = (column: PivotColumn): column is ColumnGrouping =>
-  Array.isArray((column as ColumnGrouping).children);
-const headerDepth = (column: PivotColumn): number =>
-  isGroup(column) ? 1 + Math.max(0, ...column.children.map(headerDepth)) : 1;
-const headerWidth = (column: PivotColumn): number =>
-  isGroup(column) ? column.children.reduce((sum, child) => sum + headerWidth(child), 0) : 1;
-
-/** Creates the printable result table from the same visible grid model used by CSV/XLSX. */
-export function buildPivotPrintTable(input: {
-  columns: PivotColumn[]; source?: DataType[]; pinnedBottomSource?: DataType[];
-}): string {
-  const depth = Math.max(0, ...input.columns.map(headerDepth));
-  const headerRows = Array.from({ length: depth }, () => [] as string[]);
-  const leaves: ColumnRegular[] = [];
-  const visit = (column: PivotColumn, level: number) => {
-    if (isGroup(column)) {
-      const span = headerWidth(column);
-      if (!span) return;
-      headerRows[level].push(`<th scope="colgroup" colspan="${span}">${escapeHtml(column.name)}</th>`);
-      column.children.forEach((child) => visit(child, level + 1));
-    } else {
-      leaves.push(column);
-      const rowSpan = depth - level;
-      headerRows[level].push(`<th scope="col"${rowSpan > 1 ? ` rowspan="${rowSpan}"` : ''}>${escapeHtml(column.name)}</th>`);
-    }
-  };
-  input.columns.forEach((column) => visit(column, 0));
-  const headers = headerRows.map((row) => `<tr>${row.join('')}</tr>`).join('');
-  const source = input.source ?? [];
-  const rows = [...source, ...(input.pinnedBottomSource ?? [])];
-  const body = rows.map((row, index) => {
-    if (isGrouping(row)) {
-      const depth = Number(row[GROUP_DEPTH]);
-      const padding = 5 + (Number.isFinite(depth) ? Math.max(0, depth) : 0) * 12;
-      return `<tr class="group"><th scope="row" colspan="${leaves.length}" style="padding-left:${padding}px">${escapeHtml(getGroupingName(row))}</th></tr>`;
-    }
-    return `<tr${index >= source.length ? ' class="total"' : ''}>${leaves.map((column) =>
-      `<td>${escapeHtml(row[column.prop])}</td>`).join('')}</tr>`;
-  }).join('');
-  return `<table><thead>${headers}</thead><tbody>${body}</tbody></table>`;
-}
-
 /** Opens the browser's print dialog; Save as PDF uses its paginated output. */
 export async function printFinancialPivot(grid: HTMLRevoGridElement): Promise<void> {
-  const result = await visibleResult(grid);
-  const table = buildPivotPrintTable(result);
+  const table = (await getPivotPlugin(grid)).buildPrintTable();
   const frame = document.createElement('iframe');
   frame.title = 'Visible pivot result for printing';
   frame.style.cssText = 'position:absolute;width:0;height:0;border:0';

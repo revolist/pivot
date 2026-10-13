@@ -56,3 +56,15 @@ test('grand-total paths include all records of the selected source and reject un
   assert.equal(ticketsForPivotCell(source, { rowPath: ['Platform'], columnPath: [] }).length, source.length);
   assert.equal(ticketsForPivotCell(source, { rowPath: ['Unknown'], columnPath: [] }).length, 0);
 });
+
+test('measure drill-through lists only records contributing to the displayed value', () => {
+  const source = ticketsInScope(createTickets(), { team: 'Platform', priority: 'Critical' });
+  const path = { rowPath: ['Platform'], columnPath: ['Critical'] };
+  assert.equal(ticketsForPivotCell(source, { ...path, dataIndex: 0 }).length, 40);
+  const resolved = ticketsForPivotCell(source, { ...path, dataIndex: 1 });
+  assert.equal(resolved.length, 36);
+  assert.ok(resolved.every(ticket => ticket['Resolution Hours'] !== null));
+  const breaches = ticketsForPivotCell(source, { ...path, dataIndex: 2 });
+  assert.equal(breaches.length, 36);
+  assert.ok(breaches.every(ticket => ticket['SLA Breach Count'] === 1));
+});

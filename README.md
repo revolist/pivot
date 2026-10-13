@@ -33,7 +33,7 @@ project and install the trial packages under the production import names:
 
 ```bash
 pnpm config set @revolist:registry https://trial.rv-grid.com --location=project
-pnpm i @revolist/revogrid-pro@npm:@revolist/rv-pro-trial@2.8.6 @revolist/pivot@npm:@revolist/pivot-trial@2.8.6
+pnpm add @revolist/revogrid@4.28.0 @revolist/revogrid-pro@npm:@revolist/rv-pro-trial@2.9.5 @revolist/pivot@npm:@revolist/pivot-trial@2.9.5
 ```
 
 ### Pro
@@ -43,7 +43,7 @@ packages. Source imports stay unchanged.
 
 ```bash
 pnpm config delete @revolist:registry --location=project
-pnpm i @revolist/revogrid-pro@2.8.6 @revolist/pivot@2.8.6
+pnpm add @revolist/revogrid@4.28.0 @revolist/revogrid-pro@2.9.5 @revolist/pivot@2.9.5
 ```
 
 ## Quick start
@@ -51,11 +51,13 @@ pnpm i @revolist/revogrid-pro@2.8.6 @revolist/pivot@2.8.6
 ```ts
 import { defineCustomElements } from '@revolist/revogrid/loader';
 import { PivotPlugin, type PivotConfig } from '@revolist/pivot';
+import '@revolist/revogrid-pro/styles.css';
 import '@revolist/pivot/styles.css';
 
 defineCustomElements();
 
 const pivot: PivotConfig = {
+  dimensions: ['country', 'year', 'sales'].map(prop => ({ prop, name: prop })),
   rows: ['country'],
   columns: ['year'],
   values: [{ prop: 'sales', aggregator: 'sum' }],
@@ -65,7 +67,11 @@ const pivot: PivotConfig = {
 const grid = document.createElement('revo-grid');
 grid.plugins = [PivotPlugin];
 grid.pivot = pivot;
-document.querySelector('#app')?.appendChild(grid);
+grid.style.height = '500px';
+const host = document.querySelector('#app');
+if (!host) throw new Error('Add <div id="app"></div> to your page.');
+host.appendChild(grid);
+// Set source after mounting so the plugin has connected to the grid.
 grid.source = [
   { country: 'Portugal', year: 2025, sales: 125000 },
   { country: 'Portugal', year: 2026, sales: 148000 },
@@ -88,12 +94,14 @@ Build all integrations with `pnpm build:frameworks`.
 
 ## Run the examples
 
-Clone the component repository, follow either the **Free trial** or **Pro**
-installation above, and start the framework you want to inspect:
+Use **Node 22.22.3 or newer** and **pnpm 10**. The checkout already declares
+the exact trial dependencies and registry; no token or manual package edits
+are needed to run it:
 
 ```bash
 git clone https://github.com/revolist/pivot.git
 cd pivot
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
@@ -109,11 +117,50 @@ The focused Pivot examples are owned by this repository:
 | Example | Source | Start command |
 | --- | --- | --- |
 | Support operations | [`examples/operations`](./examples/operations/) | `pnpm --dir examples/operations dev` |
-| Client and remote scale | [`examples/scale`](./examples/scale/) | `pnpm --dir examples/scale dev` |
-| CSV and JSON import | [`examples/import`](./examples/import/) | `pnpm --dir examples/import dev` |
+| Client scale | [`examples/scale`](./examples/scale/) | `pnpm --dir examples/scale dev` |
 
-Run `pnpm install` at the repository root first. The remote scale example also
-needs `pnpm --dir examples/scale backend` in a second terminal.
+Run `pnpm install` at the repository root first.
+
+## Find the code for each demo
+
+Start with the entry or component, then edit the data or configuration module
+for the part you want to change. Framework wrappers reuse those modules.
+
+| Demo | Local URL after starting its app | UI / entry | Data and configuration |
+| --- | --- | --- | --- |
+| Main Pivot | `/` | `src/pivot.vue` or `src/pivot.ts` | `src/contoso-data.ts`, `src/financial.pivot.ts` |
+| Financial analysis | `/financial.html` | `src/financial-demo.vue` | Same model, initially selects the Profit preset |
+| Charts dashboard | `/charts.html` | `src/charts-dashboard.vue` | `src/charts-dashboard.model.ts` |
+| Ticket investigation | `/` in Operations | `examples/operations/src/OperationsPivot.vue` | `tickets.ts`, `pivot.ts` in the same directory |
+| Client scale | `/` in Scale | `examples/scale/src/scale-demo.ts` | `data.ts`, `pivot-config.ts` in the same directory |
+
+The root app serves Main, Financial and Charts together on Vite's printed URL
+(normally port 5173). Focused apps also default to 5173; start one at a time
+or use `pnpm --dir examples/operations dev --port 5175`.
+
+For a minimal integration, use **Quick start** above. To reproduce a complete
+demo, keep its supporting modules and CSS, or clone this checkout; one framework
+component alone is not the whole application. The bundled Contoso asset is
+already included, so Python and an external data download are not prerequisites.
+Detailed product reports can exceed the chart safety limits. The demo keeps
+the table available and asks you to filter data through Fields before charting;
+it never silently removes products from the report.
+The optional summary-panel enhancement appears when the installed Pro package
+exports it; the pinned public trial runs the full report without that panel.
+
+## Adapt with an AI coding assistant
+
+Give your assistant this repository and [`AGENTS.md`](./AGENTS.md), then use a
+specific request such as:
+
+> Read AGENTS.md and examples/operations/README.md. Run the Operations demo.
+> Adapt its ticket fields to my support data using the installed public Pivot
+> types. Run its tests, typecheck and build, then verify the report totals
+> against an independent calculation.
+
+Change `examples/operations` to the demo you want. Say which framework and behavior
+you need; keep data preparation, Pivot configuration, UI and cleanup in their
+existing owners. Each focused README lists those owners and its verification commands.
 
 ## Resources
 
@@ -127,3 +174,7 @@ needs `pnpm --dir examples/scale backend` in a second terminal.
 The integration source and supporting assets in this repository are MIT
 licensed. RevoGrid Pro and RevoGrid Pivot are commercial packages distributed
 under the license supplied with your subscription.
+
+### Theme integration
+
+All demos follow the document’s `dark`/`light` class or `data-theme` attribute, falling back to the operating system preference. `src/shared/theme.ts` owns detection and live updates; hosts dispose its observer when unmounted. Grids use the public `compact` and `darkCompact` themes. Copy the shared helper alongside the focused example when reusing its source.

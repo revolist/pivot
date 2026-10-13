@@ -20,7 +20,7 @@ import {
   persistPivotState,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, exportFinancialXlsx, mountFinancialChart, printFinancialPivot } from './financial.actions';
+import { exportFinancialCsv, exportFinancialXlsx, financialActionError, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import { createFinancialFieldsDrawer, type FinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMNS,
@@ -62,9 +62,10 @@ declare module 'react' {
 interface PivotProps {
   rows?: DataType[];
   initialPreset?: FinancialPresetId;
+  chartTitle?: string;
 }
 
-function PivotShowcase({ rows, initialPreset = 'sales' }: PivotProps) {
+function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps) {
   const [isDark, setIsDark] = useState(() => currentTheme().isDark());
   const initialData = useMemo(() => resolveFinancialRows(rows), [rows]);
   const [data, setData] = useState<DataType[]>(initialData);
@@ -81,12 +82,13 @@ function PivotShowcase({ rows, initialPreset = 'sales' }: PivotProps) {
   const [reportsRevision, setReportsRevision] = useState(0);
   const [actionError, setActionError] = useState('');
   const [columnSize, setColumnSize] = useState(128);
+  const [hostWidth, setHostWidth] = useState(0);
   const chartContainer = useRef<HTMLDivElement>(null);
   const chartRef = useRef<PivotChartRef>();
 
   const pivot = useMemo(
-    () => applyFinancialPivotOptions(pivotConfig, data, configuratorVisible, configuratorMount),
-    [pivotConfig, data, configuratorVisible, configuratorMount],
+    () => applyFinancialPivotOptions(pivotConfig, data, configuratorVisible, configuratorMount, hostWidth),
+    [pivotConfig, data, configuratorVisible, configuratorMount, hostWidth],
   );
   const plugins = useMemo(() => FINANCIAL_SHOWCASE_PLUGINS, []);
   const columns = useMemo(() => FINANCIAL_COLUMNS, []);
@@ -101,6 +103,7 @@ function PivotShowcase({ rows, initialPreset = 'sales' }: PivotProps) {
     const host = gridHostRef.current;
     if (!host) return;
     const fit = () => {
+      setHostWidth(host.clientWidth);
       setColumnSize(financialPivotColumnSize(host, pivotConfig));
     };
     const observer = new ResizeObserver(fit);
@@ -136,12 +139,16 @@ function PivotShowcase({ rows, initialPreset = 'sales' }: PivotProps) {
   useEffect(() => {
     if (!chartVisible || chartRef.current || !chartContainer.current || !gridRef.current) return;
     let cancelled = false;
-    mountFinancialChart(gridRef.current, chartContainer.current).then((chart) => {
+    mountFinancialChart(gridRef.current, chartContainer.current, chartTitle).then((chart) => {
       if (cancelled) chart.destroy();
       else chartRef.current = chart;
-    }).catch(() => setActionError('Could not open the chart.'));
+    }).catch((error) => {
+      if (cancelled) return;
+      setChartVisible(false);
+      setActionError(financialActionError(error));
+    });
     return () => { cancelled = true; };
-  }, [chartVisible]);
+  }, [chartVisible, chartTitle]);
 
   useEffect(() => {
     const grid = gridRef.current;

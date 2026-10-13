@@ -28,6 +28,41 @@ const DEFAULT_STATE: FinancialPivotHeaderState = {
 
 class FinancialPivotHeader extends HTMLElement {
   private currentState = DEFAULT_STATE;
+  private readonly positionReportMenu = () => {
+    const report = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu');
+    const menu = report?.querySelector<HTMLElement>('.financial-pivot-header__menu-items');
+    if (!report?.open || !menu) return;
+    // Toolbar actions wrap independently; position this overlay from its actual anchor.
+    const anchor = report.getBoundingClientRect();
+    const margin = 12;
+    const below = Math.max(0, window.innerHeight - anchor.bottom - margin);
+    const above = Math.max(0, anchor.top - margin);
+    const useBelow = below >= Math.min(300, menu.scrollHeight) || below >= above;
+    const height = Math.min(640, useBelow ? below : above);
+    const left = Math.max(margin, Math.min(anchor.right - menu.offsetWidth,
+      window.innerWidth - menu.offsetWidth - margin));
+    menu.style.left = `${left}px`;
+    menu.style.right = 'auto';
+    menu.style.maxHeight = `${height}px`;
+    const top = useBelow ? anchor.bottom : anchor.top - Math.min(menu.scrollHeight + 2, height);
+    menu.style.top = `${Math.max(margin, Math.min(top, window.innerHeight - height - margin))}px`;
+  };
+  private readonly onReportToggle = () => {
+    const open = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu')?.open;
+    // Closed menus do no work while the grid or page scrolls.
+    document.removeEventListener('scroll', this.positionReportOnScroll, true);
+    window.removeEventListener('resize', this.positionReportMenu);
+    if (open) {
+      document.addEventListener('scroll', this.positionReportOnScroll, true);
+      window.addEventListener('resize', this.positionReportMenu);
+      this.positionReportMenu();
+    }
+  };
+  private readonly positionReportOnScroll = (event: Event) => {
+    // Scrolling the menu itself does not move its anchor.
+    if (event.target instanceof Element && event.target.closest('.financial-pivot-header__menu-items')) return;
+    this.positionReportMenu();
+  };
   private readonly closeReportOnOutsideClick = (event: PointerEvent) => {
     const report = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu');
     if (report?.open && !report.contains(event.target as Node)) report.open = false;
@@ -51,6 +86,8 @@ class FinancialPivotHeader extends HTMLElement {
   disconnectedCallback() {
     document.removeEventListener('pointerdown', this.closeReportOnOutsideClick);
     document.removeEventListener('keydown', this.closeReportOnEscape);
+    document.removeEventListener('scroll', this.positionReportOnScroll, true);
+    window.removeEventListener('resize', this.positionReportMenu);
     this.replaceChildren();
   }
 
@@ -64,7 +101,7 @@ class FinancialPivotHeader extends HTMLElement {
     const state = this.currentState;
     const root = element('div', 'financial-pivot-header');
     const toolbar = element('div', 'financial-pivot-header__toolbar');
-    const presetSwitch = element('div', 'rv-segmented-switch financial-pivot-header__preset-switch');
+    const presetSwitch = element('div', 'financial-pivot-header__preset-switch');
     presetSwitch.setAttribute('role', 'tablist');
     presetSwitch.setAttribute('aria-label', 'Financial report presets');
     const analysisMode = state.activePreset && FINANCIAL_ANALYSIS_PRESET_IDS.includes(state.activePreset);
@@ -74,12 +111,11 @@ class FinancialPivotHeader extends HTMLElement {
       const button = actionButton(preset.label, () => {
         if (!active) this.emit(FINANCIAL_PIVOT_PRESET_EVENT, preset.id);
       });
-      button.className = `rv-segmented-switch-item${active ? ' on' : ''}`;
+      button.className = `financial-pivot-header__preset-tab${active ? ' is-active' : ''}`;
       button.dataset.value = preset.id;
       button.setAttribute('role', 'tab');
       button.setAttribute('aria-selected', String(active));
       button.tabIndex = active ? 0 : -1;
-      button.firstElementChild?.classList.add('rv-segmented-switch-label');
       presetSwitch.append(button);
     }
     presetSwitch.addEventListener('keydown', (event) => {
@@ -97,12 +133,33 @@ class FinancialPivotHeader extends HTMLElement {
       tabs[next]?.click();
     });
     const actions = element('div', 'financial-pivot-header__actions');
+    const viewSwitch = element('div', 'financial-pivot-header__view-switch');
+    viewSwitch.setAttribute('role', 'group');
+    viewSwitch.setAttribute('aria-label', 'Report view');
+    for (const [label, chartVisible, path] of [
+      ['Pivot', false, 'M3 3h14v14H3z M3 8h14 M8 3v14 M3 12h14'],
+      ['Chart', true, 'M3 3v14h14 M7 13V9 M11 13V5 M15 13V7'],
+    ] as const) {
+      const selected = !!state.chartVisible === chartVisible;
+      const button = actionButton(label, () => {
+        if (!selected) this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'chart');
+      }, chartVisible ? 'chart' : 'pivot', selected);
+      button.classList.add('financial-pivot-header__view-button');
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      icon.setAttribute('viewBox', '0 0 20 20');
+      icon.setAttribute('aria-hidden', 'true');
+      icon.setAttribute('focusable', 'false');
+      const shape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      shape.setAttribute('d', path);
+      icon.append(shape);
+      button.prepend(icon);
+      viewSwitch.append(button);
+    }
     const exploreActions = element('div', 'financial-pivot-header__action-group');
     exploreActions.setAttribute('role', 'group');
     exploreActions.setAttribute('aria-label', 'Explore report');
     exploreActions.append(
       actionButton('Fields', () => this.emit(FINANCIAL_PIVOT_CONFIGURATOR_EVENT), 'fields', state.configuratorVisible),
-      actionButton('Chart', () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'chart'), 'chart', state.chartVisible),
       actionButton('Export CSV', () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export'), 'export'),
     );
     const manageActions = element('div', 'financial-pivot-header__action-group financial-pivot-header__action-group--manage');
@@ -168,6 +225,7 @@ class FinancialPivotHeader extends HTMLElement {
       }, 'import-json'),
     );
     reportMenu.append(menu);
+    reportMenu.addEventListener('toggle', this.onReportToggle);
     const expandLabel = state.expanded ? 'Exit expanded workspace' : 'Expand workspace';
     const expandButton = actionButton(expandLabel,
       () => this.emit(FINANCIAL_PIVOT_EXPANDED_EVENT), 'expanded', state.expanded);
@@ -180,12 +238,13 @@ class FinancialPivotHeader extends HTMLElement {
       actionButton('Reset', () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'reset'), 'reset'),
       expandButton,
     );
-    actions.append(exploreActions, manageActions);
+    actions.append(viewSwitch, exploreActions, manageActions);
     toolbar.append(presetSwitch, actions);
     const surface = element('div', 'financial-pivot-header__surface');
     surface.append(toolbar);
     root.append(surface);
     this.replaceChildren(root);
+    this.onReportToggle();
     if (focusedPreset) this.querySelector<HTMLElement>(`[data-value="${focusedPreset}"]`)?.focus();
     else if (focusedReportName) nameInput.focus();
     else if (focusedAction) this.querySelector<HTMLElement>(`[data-action="${focusedAction}"]`)?.focus();

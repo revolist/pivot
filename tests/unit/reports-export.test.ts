@@ -77,15 +77,15 @@ describe('Pivot reports', () => {
     expect(table.querySelector('tbody tr.total')?.textContent).toContain('Grand Total');
   });
 
-  it('prints grouped Pivot rows as labeled hierarchy rows', () => {
+  it('prints resolved grouped Pivot labels and their numeric aggregates', () => {
     const html = buildPivotPrintTable({
       columns: [
         { name: 'Rows', prop: 'Product' },
         { name: 'Revenue', prop: 'revenue' },
       ],
       source: [
-        { '__rvgr-name': 'Audio & Video', '__rvgr-depth': 0, Category: 'Audio & Video' },
-        { '__rvgr-name': 'Headphones', '__rvgr-depth': 1, Subcategory: 'Headphones' },
+        { Product: 'Audio & Video', revenue: 125 },
+        { Product: 'Headphones', revenue: 125 },
         { Product: 'Wireless Headphones', revenue: 125 },
       ],
       pinnedBottomSource: [{ Product: 'Grand Total', revenue: 125 }],
@@ -94,9 +94,10 @@ describe('Pivot reports', () => {
     table.innerHTML = html;
     const rows = [...table.querySelectorAll('tbody tr')];
     expect(rows).toHaveLength(4);
-    expect(rows[0].querySelector('th[scope="row"]')?.textContent).toBe('Audio & Video');
-    expect(rows[0].querySelector('th')?.getAttribute('colspan')).toBe('2');
-    expect(rows[1].querySelector('th[scope="row"]')?.textContent).toBe('Headphones');
+    expect(rows[0].querySelector('td')?.textContent).toBe('Audio & Video');
+    expect(rows[0].querySelectorAll('td')).toHaveLength(2);
+    expect(rows[0].textContent).toContain('125');
+    expect(rows[1].querySelector('td')?.textContent).toBe('Headphones');
     expect(rows[2].textContent).toContain('Wireless Headphones');
     expect(rows[3].classList.contains('total')).toBe(true);
     expect(html).toContain('Audio &amp; Video');

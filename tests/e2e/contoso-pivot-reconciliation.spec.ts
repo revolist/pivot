@@ -30,7 +30,9 @@ async function report(page: Page, route: string, preset: string) {
   await expect(page.getByRole('tab', { name: preset, exact: true })).toHaveAttribute('aria-selected', 'true');
   await page.waitForFunction((label) => {
     const grid = document.querySelector('revo-grid') as HTMLRevoGridElement | null;
-    return grid?.source?.length && document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim() === label;
+    return grid?.source?.length && grid.source.every(row => row.__pivotGenerated)
+      && grid.pinnedBottomSource?.length
+      && document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim() === label;
   }, preset);
   return page.locator('revo-grid').first().evaluate((grid: HTMLRevoGridElement) => ({
     source: grid.source as (Sale & Record<string, number | string>)[],
@@ -132,12 +134,12 @@ test('Contoso year over year: the first year is blank and the second is percent 
     if (![2024, 2025].every((year) => matching.some((row) => row.Year === year))) continue;
     const previous = sum(matching.filter((row) => row.Year === 2024), 'Revenue');
     const current = sum(matching.filter((row) => row.Year === 2025), 'Revenue');
-    usd(Number(item['2024|__pivot_collapse__|sales']), previous);
-    usd(Number(item['2025|__pivot_collapse__|sales']), current);
-    expect(item['2024|__pivot_collapse__|sales-yoy']).toBeNull();
+    usd(Number(item['2024|sales']), previous);
+    usd(Number(item['2025|sales']), current);
+    expect(item['2024|sales-yoy']).toBeNull();
     const expected = previous ? (current - previous) / previous : null;
-    if (expected === null) expect(item['2025|__pivot_collapse__|sales-yoy']).toBeNull();
-    else expect(Number(item['2025|__pivot_collapse__|sales-yoy'])).toBeCloseTo(expected, 10);
+    if (expected === null) expect(item['2025|sales-yoy']).toBeNull();
+    else expect(Number(item['2025|sales-yoy'])).toBeCloseTo(expected, 10);
   }
 });
 
@@ -248,8 +250,8 @@ test('Contoso category year-over-year changes match source revenue', async ({ pa
       ? rows : rows.filter((row) => row.Category === item.Category);
     const previous = sum(matching.filter((row) => row.Year === 2024), 'Revenue');
     const current = sum(matching.filter((row) => row.Year === 2025), 'Revenue');
-    expect(item['2024|__pivot_collapse__|sales-yoy']).toBeNull();
-    expect(Number(item['2025|__pivot_collapse__|sales-yoy']))
+    expect(item['2024|sales-yoy']).toBeNull();
+    expect(Number(item['2025|sales-yoy']))
       .toBeCloseTo((current - previous) / previous, 10);
   }
 });

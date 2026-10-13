@@ -1,3 +1,4 @@
+/** Saved report state only. Serialization uses the public Pivot API; grid rendering and export actions live in separate modules. */
 import {
   createSerializablePivotConfig,
   parsePivotStateJson,

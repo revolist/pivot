@@ -1,3 +1,4 @@
+/** Vanilla host for the shared financial report model. Vue/React/Angular use the same data, presets, actions and state helpers. */
 import { defineCustomElements } from '@revolist/revogrid/loader';
 import type { PivotConfig, PivotChartRef } from '@revolist/pivot';
 import './financial-pivot-header/financial-pivot-header.scss';
@@ -12,7 +13,7 @@ import {
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, exportFinancialXlsx, mountFinancialChart, printFinancialPivot } from './financial.actions';
+import { exportFinancialCsv, exportFinancialXlsx, financialActionError, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import { createFinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMNS,
@@ -41,7 +42,7 @@ defineCustomElements();
 export function load(
   parentSelector: string,
   rows: any[] | { isDark?: boolean } = [],
-  options: { initialPreset?: FinancialPresetId } = {},
+  options: { initialPreset?: FinancialPresetId; chartTitle?: string } = {},
 ) {
   const parent = document.querySelector(parentSelector);
   if (!parent) return;
@@ -98,6 +99,7 @@ export function load(
       data,
       configuratorVisible,
       fieldsDrawer.mountTo,
+      gridContainer.clientWidth,
     );
   }
 
@@ -146,6 +148,7 @@ export function load(
         data,
         configuratorVisible,
         fieldsDrawer.mountTo,
+        gridContainer.clientWidth,
       ),
     });
     grid.addEventListener('pivot-config-update', onPivotConfigUpdate as EventListener);
@@ -219,10 +222,11 @@ export function load(
       if (action === 'chart') {
         chartVisible = !chartVisible;
         refreshLayout();
-        if (chartVisible && !chart) chart = await mountFinancialChart(grid, chartContainer);
+        if (chartVisible && !chart) chart = await mountFinancialChart(grid, chartContainer, options.chartTitle);
       }
-    } catch {
-      actionError.textContent = 'Could not complete this report action. Please try again.';
+    } catch (error) {
+      if (action === 'chart') { chartVisible = false; refreshLayout(); }
+      actionError.textContent = financialActionError(error);
     }
   });
   scrollContainer.appendChild(gridContainer);
@@ -230,7 +234,15 @@ export function load(
   parent.appendChild(container);
   refreshLayout();
   initializeGrid();
-  const resizeObserver = new ResizeObserver(() => fitFinancialPivotColumns(grid, gridContainer, pivotConfig));
+  let narrowHost = gridContainer.clientWidth < 650;
+  const resizeObserver = new ResizeObserver(() => {
+    fitFinancialPivotColumns(grid, gridContainer, pivotConfig);
+    const narrow = gridContainer.clientWidth < 650;
+    if (narrow !== narrowHost) {
+      narrowHost = narrow;
+      applyPivotOptions();
+    }
+  });
   resizeObserver.observe(gridContainer);
   if (!providedRows) {
     actionError.textContent = 'Loading Contoso retail data…';

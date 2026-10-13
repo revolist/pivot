@@ -1,9 +1,14 @@
 import { defineConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   base: './',
   cacheDir: './.vite',
-  server: {
-    proxy: { '/api/pivot': 'http://127.0.0.1:4174', '/api/health': 'http://127.0.0.1:4174' },
+  build: {
+    rollupOptions: {
+      input: {
+        client: fileURLToPath(new URL('./index.html', import.meta.url)),
+      },
+    },
   },
 });

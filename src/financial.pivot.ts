@@ -1,5 +1,7 @@
+/** Shared report model for Main and Financial: dimensions, presets, plugin options and column sizing. Framework files only wire UI state and lifecycle. */
 import type { ColumnRegular, DataType, GridPlugin } from '@revolist/revogrid';
 import NumberColumnType from '@revolist/revogrid-column-numeral';
+import * as ProPlugins from '@revolist/revogrid-pro';
 import {
   PivotChartsPlugin,
   PivotChartsUiPlugin,
@@ -18,7 +20,6 @@ import {
   ContextMenuPlugin,
   RowOddPlugin,
   RowSelectPlugin,
-  PivotSummaryPanelPlugin,
   SameValueMergePlugin,
   commonAggregators,
   columnTypeRenderer,
@@ -83,6 +84,8 @@ const FINANCIAL_DIMENSION_DEFINITIONS: PivotConfigDimension[] = [
   },
   {
     prop: 'Product',
+    // Keep product names recognizable while leaving room for a value on mobile.
+    size: 275,
     fieldGroup: 'Dimensions',
     sortable: true,
     filter: ['string', 'selection'],
@@ -139,15 +142,20 @@ export const FINANCIAL_COLUMNS: ColumnRegular[] = FINANCIAL_DIMENSIONS.map((dime
 /** Developer opt-in for inline Pivot header inputs; report filters remain available when off. */
 export const FINANCIAL_HEADER_FILTERS_ENABLED = false;
 
+// The public trial 2.9.5 omits this optional enhancement. Namespace lookup keeps
+// standalone builds compatible while enabling it when the installed API has it.
+const summaryPanelPlugin = Reflect.get(ProPlugins, 'PivotSummaryPanelPlugin') as GridPlugin | undefined;
+
 export function createFinancialShowcasePlugins(
   headerFiltersEnabled = FINANCIAL_HEADER_FILTERS_ENABLED,
+  summaryPanelEnabled = true,
 ): GridPlugin[] {
   return [
     RowSelectPlugin,
     SameValueMergePlugin,
     ContextMenuPlugin,
     PivotPlugin,
-    PivotSummaryPanelPlugin,
+    ...(summaryPanelEnabled && typeof summaryPanelPlugin === 'function' ? [summaryPanelPlugin] : []),
     PivotChartsPlugin,
     PivotChartsUiPlugin,
     AdvanceFilterPlugin,
@@ -163,7 +171,7 @@ export const FINANCIAL_PIVOT_CHARTS: PivotChartsConfig = {
   defaultChartType: 'groupedColumn',
   limits: {
     maxSeries: 120,
-    maxDataPoints: 2_500,
+    maxDataPoints: 50_000,
   },
 };
 
@@ -273,7 +281,7 @@ const CONTRIBUTION_ANALYSIS: PivotConfig = {
   ...ANALYSIS_BASE,
   columns: [],
   values: [
-    { id: 'profit-contribution', prop: 'Gross Profit', aggregator: 'sum', label: 'Share of total profit',
+    { id: 'profit-contribution', prop: 'Gross Profit', aggregator: 'sum', label: 'Profit share',
       calculation: { type: 'percentOfGrandTotal' }, format: { preset: 'percent' } },
     { id: 'profit', prop: 'Gross Profit', aggregator: 'sum', label: 'Gross Profit' },
   ],
@@ -285,7 +293,7 @@ const RUNNING_ANALYSIS: PivotConfig = {
   columns: ['Month'],
   filters: ['Year', 'Product'],
   filterSelections: { Year: [2025] },
-  values: [{ id: 'cumulative-sales', prop: 'Revenue', aggregator: 'sum', label: 'Revenue year to date',
+  values: [{ id: 'cumulative-sales', prop: 'Revenue', aggregator: 'sum', label: 'Revenue YTD',
     calculation: { type: 'runningTotal', axis: 'columns', field: 'Month' } }],
 };
 
@@ -298,7 +306,7 @@ const YEAR_OVER_YEAR_ANALYSIS: PivotConfig = {
   columnLevels: { 0: { collapsible: false, collapsed: false, filterable: false, sortable: false } },
   values: [
     { id: 'sales', prop: 'Revenue', aggregator: 'sum', label: 'Revenue' },
-    { id: 'sales-yoy', prop: 'Revenue', aggregator: 'sum', label: 'Year-over-year change',
+    { id: 'sales-yoy', prop: 'Revenue', aggregator: 'sum', label: 'YoY change',
       calculation: { type: 'percentDifferenceFrom', axis: 'columns', field: 'Year', base: 'previous' },
       format: { preset: 'percent' } },
   ],
@@ -313,7 +321,9 @@ const RANKING_ANALYSIS: PivotConfig = {
   values: [
     { id: 'profit', prop: 'Gross Profit', aggregator: 'sum', label: 'Gross Profit' },
     { id: 'profit-rank', prop: 'Gross Profit', aggregator: 'sum', label: 'Profit rank',
-      calculation: { type: 'rank', axis: 'rows', field: 'Product', order: 'desc' } },
+      calculation: { type: 'rank', axis: 'rows', field: 'Product', order: 'desc' },
+      // Rank is a position, not the currency of its source profit measure.
+      format: { preset: 'number', options: { maximumFractionDigits: 0 } } },
   ],
 };
 
@@ -346,7 +356,7 @@ export const FINANCIAL_PRESETS: FinancialPreset[] = [
     label: 'Product Performance',
     description: 'Explore product revenue and quantity within categories and subcategories.',
   },
-  { id: 'profit', label: 'Profit', description: 'How does gross profit vary across categories and years?' },
+  { id: 'profit', label: 'Profit', description: 'How does gross profit vary across categories and years? Expand a year to compare its revenue.' },
   { id: 'contribution', label: 'Contribution', description: 'What share of total profit comes from each category?' },
   { id: 'running', label: 'Running total', description: 'How did 2025 revenue accumulate month by month in each country?' },
   { id: 'yoy', label: 'Year over year', description: 'Which products grew or declined between years? The first year has no prior comparison.' },
@@ -364,6 +374,18 @@ const PRESET_CONFIGS: Record<FinancialPresetId, PivotConfig> = {
   ranking: RANKING_ANALYSIS,
 };
 
+/** Semantic measure formats are shared by the grid and printable report. */
+function financialMeasureFormat(value: PivotConfig['values'][number]): PivotConfig['values'][number]['format'] {
+  if (value.format) return { ...value.format };
+  if (['Revenue', 'Cost', 'Gross Profit'].includes(String(value.prop))) {
+    return { preset: 'currency', currency: 'USD', locale: 'en-US' };
+  }
+  if (value.prop === 'Quantity') {
+    return { preset: 'number', locale: 'en-US', options: { maximumFractionDigits: 0 } };
+  }
+  return undefined;
+}
+
 export function createFinancialPreset(id: FinancialPresetId = 'sales'): PivotConfig {
   const config = PRESET_CONFIGS[id];
   return {
@@ -379,7 +401,8 @@ export function createFinancialPreset(id: FinancialPresetId = 'sales'): PivotCon
     values: config.values.map((value) => ({
       ...value,
       calculation: value.calculation ? structuredClone(value.calculation) : undefined,
-      format: value.format ? { ...value.format } : undefined,
+      // CSV/XLSX exports retain the original aggregate precision.
+      format: financialMeasureFormat(value),
     })),
     filters: [...(config.filters || [])],
     filterSelections: clonePivotFilterSelectionMap(config.filterSelections || {}),
@@ -431,6 +454,7 @@ export function applyFinancialPivotOptions(
   data: DataType[],
   configuratorVisible = false,
   configuratorMount?: HTMLElement,
+  hostWidth = Infinity,
 ): PivotConfig | undefined {
   if (!config) return undefined;
 
@@ -443,6 +467,10 @@ export function applyFinancialPivotOptions(
     // out of the headers, including Grand Total, as fields are rearranged.
     dimensions: config.dimensions?.map((dimension) => ({
       ...dimension,
+      // A pinned label must leave room for an entire amount on narrow hosts.
+      ...(hostWidth > 0 && hostWidth < 650 && rows.includes(dimension.prop)
+        ? { size: Math.min(dimension.size ?? 180, 180, Math.floor(hostWidth / 2)) }
+        : {}),
       ...(valueProps.has(dimension.prop) ? { filter: false } : {}),
     })),
     mergeValueHeaders: config.values.length === 1,

@@ -1,7 +1,5 @@
+/** Dimensions and measures for the client scale example. */
 import type { PivotConfig } from '@revolist/pivot';
-
-export const VIEW_ID = 'scale-sales-v1';
-export const FIELDS_VERSION = 'scale-sales-fields-v1';
 
 export function createScalePivotConfig(): PivotConfig {
   return {
@@ -19,6 +17,8 @@ export function createScalePivotConfig(): PivotConfig {
     values: [{ prop: 'sales', aggregator: 'sum', label: 'Sales (USD)', format: { preset: 'currency', currency: 'USD' } }],
     filters: ['category'],
     totals: { grandTotal: true, subtotals: true },
+    // Collapsed hierarchy rows display their totals through the group aggregate renderer.
+    groupAggregations: true,
     collapsed: true,
     columnCollapse: { collapsed: true },
     hasConfigurator: true,

@@ -154,8 +154,10 @@ test('alternative reports give the Rows header the main report width', async ({ 
 test('chart and visible CSV export are usable from the toolbar', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('columnheader', { name: 'Grand Total' }).first()).toBeVisible({ timeout: 20_000 });
-  await page.getByRole('button', { name: 'Chart' }).click();
-  await expect(page.getByRole('button', { name: 'Chart' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Chart', exact: true }).click();
+  const chartType = page.getByRole('button', { name: 'Grouped column', exact: true });
+  if (await chartType.isVisible()) await chartType.click();
+  await expect(page.getByRole('button', { name: 'Chart', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByLabel('Pivot chart', { exact: true })).toBeVisible();
   const grid = page.locator('.pivot-grid-container');
   await expect(grid).toBeHidden();
@@ -168,8 +170,10 @@ test('chart and visible CSV export are usable from the toolbar', async ({ page }
   expect(csv).toContain('Revenue');
   expect(csv).toContain('Grand Total');
   // The 2025 source-line revenue sums to USD 7,776,899.28.
-  expect(csv.replace(/[$,"]/g, '')).toContain('7776899.28');
-  await page.getByRole('button', { name: 'Chart' }).click();
+  const totalRow = csv.split(/\r?\n/).find(line => line.includes('Grand Total') && !line.includes('Revenue'))!;
+  const total = Number(totalRow.split(',').at(-1)?.replace(/"/g, ''));
+  expect(total).toBeCloseTo(7776899.28, 2);
+  await page.getByRole('button', { name: 'Pivot', exact: true }).click();
   await expect(grid).toBeVisible();
 });
 
@@ -184,7 +188,8 @@ test('visible XLSX retains the source-backed USD grand total', async ({ page }) 
   const entries = unzipSync(readFileSync(await download.path()));
   const worksheet = strFromU8(entries['xl/worksheets/sheet1.xml']);
   expect(worksheet).toContain('Grand Total');
-  expect(worksheet).toContain('<v>7776899.28</v>');
+  const values = [...worksheet.matchAll(/<v>([^<]+)<\/v>/g)].map(match => Number(match[1]));
+  expect(values.some(value => Math.abs(value - 7776899.28) < 0.005)).toBe(true);
 });
 
 test('drill-through returns only the selected month, country and category sales lines', async ({ page }) => {
@@ -208,7 +213,7 @@ test('print view retains the visible USD grand total', async ({ page }) => {
   await page.locator('summary', { hasText: 'Report' }).click();
   await page.getByRole('button', { name: 'Print / Save PDF (visible result)' }).click();
   const frame = page.locator('iframe[title="Visible pivot result for printing"]');
-  await expect(frame).toHaveAttribute('srcdoc', /7776899\.28/);
+  await expect(frame).toHaveAttribute('srcdoc', /\$7,776,899\.28/);
 });
 
 test('Product Performance PDF shows grouped row labels instead of empty rows', async ({ page }) => {
@@ -218,13 +223,13 @@ test('Product Performance PDF shows grouped row labels instead of empty rows', a
   await page.locator('summary', { hasText: 'Report' }).click();
   await page.getByRole('button', { name: 'Print / Save PDF (visible result)' }).click();
   const printTable = page.frameLocator('iframe[title="Visible pivot result for printing"]');
-  const groupRows = printTable.locator('tbody tr.group');
-  await expect(groupRows.first()).toBeVisible();
-  for (const label of await groupRows.locator('th[scope="row"]').allTextContents()) {
-    expect(label.trim()).not.toBe('');
-  }
+  const rows = printTable.locator('tbody tr');
+  await expect(rows.first()).toContainText('Audio');
+  await expect(rows.first().locator('td').first()).not.toBeEmpty();
   for (const row of await printTable.locator('tbody tr').allTextContents()) {
     expect(row.trim()).not.toBe('');
   }
   await expect(printTable.locator('tbody tr.total')).toContainText('Grand Total');
+  await expect(printTable.locator('tbody tr.total')).toContainText('$7,776,899.28');
+  expect(await printTable.locator('tbody').innerText()).not.toMatch(/\.\d{3,}/);
 });

@@ -40,6 +40,7 @@
           :plugins="plugins"
           :column-types="columnTypes"
           readonly
+          @aftergridinit="onGridReady"
           @pivot-config-update="configUpdate"
         />
       </div>
@@ -62,7 +63,7 @@ import {
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, exportFinancialXlsx, mountFinancialChart, printFinancialPivot } from './financial.actions';
+import { exportFinancialCsv, exportFinancialXlsx, financialActionError, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import { createFinancialFieldsDrawer, type FinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMNS,
@@ -87,7 +88,7 @@ defineFinancialPivotHeaderElement();
 
 const isDark = ref(currentTheme().isDark());
 let disconnectTheme: (() => void) | undefined;
-const props = defineProps<{ rows?: any[]; initialPreset?: FinancialPresetId }>();
+const props = defineProps<{ rows?: any[]; initialPreset?: FinancialPresetId; chartTitle?: string }>();
 const initialRows = resolveFinancialRows(props.rows);
 const rows = shallowRef(initialRows);
 const loading = ref(!props.rows);
@@ -123,11 +124,35 @@ const savedAvailable = ref(hasSavedPivotReport());
 const reportsRevision = ref(0);
 const gridHost = ref<HTMLElement>();
 const columnSize = ref(128);
-// The Vue wrapper ref is a component instance; actions need the public grid element API.
-const gridElement = computed(() => gridHost.value?.querySelector('revo-grid') as HTMLRevoGridElement | undefined);
+const hostWidth = ref(0);
+// Resolve the public element when the wrapper has finished initializing the grid.
+const gridElement = shallowRef<HTMLRevoGridElement>();
+const onGridReady = (event: Event) => {
+  gridElement.value = event.target as HTMLRevoGridElement;
+};
+watch([gridElement, chartVisible], async ([grid, visible], _previous, onCleanup) => {
+  if (!grid || !visible || chart || !chartContainer.value) return;
+  let active = true;
+  onCleanup(() => { active = false; });
+  try {
+    await grid.componentOnReady();
+    if (!active) return;
+    const mounted = await mountFinancialChart(grid, chartContainer.value, props.chartTitle);
+    if (active) chart = mounted;
+    else mounted.destroy();
+  } catch (error) {
+    if (active) {
+      chartVisible.value = false;
+      actionError.value = financialActionError(error);
+    }
+  }
+}, { flush: 'post' });
 let gridResizeObserver: ResizeObserver | undefined;
 const fitColumns = () => {
-  if (gridHost.value) columnSize.value = financialPivotColumnSize(gridHost.value, pivotConfig.value);
+  if (gridHost.value) {
+    hostWidth.value = gridHost.value.clientWidth;
+    columnSize.value = financialPivotColumnSize(gridHost.value, pivotConfig.value);
+  }
 };
 watch(gridHost, (host) => {
   gridResizeObserver?.disconnect();
@@ -156,6 +181,7 @@ const pivot = computed(() =>
     rows.value,
     configuratorVisible.value,
     configuratorMount.value,
+    hostWidth.value,
   ),
 );
 
@@ -226,10 +252,6 @@ const onAction = async (event: Event) => {
     if (action === 'print' && gridElement.value) await printFinancialPivot(gridElement.value);
     if (action === 'chart') {
       chartVisible.value = !chartVisible.value;
-      if (chartVisible.value && !chart) {
-        await nextTick();
-        if (gridElement.value && chartContainer.value) chart = await mountFinancialChart(gridElement.value, chartContainer.value);
-      }
     }
   } catch {
     actionError.value = 'Could not complete this report action. Please try again.';

@@ -26,7 +26,7 @@ import {
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, exportFinancialXlsx, mountFinancialChart, printFinancialPivot } from './financial.actions';
+import { exportFinancialCsv, exportFinancialXlsx, financialActionError, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import { createFinancialFieldsDrawer, type FinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMNS,
@@ -110,6 +110,7 @@ defineFinancialPivotHeaderElement();
   `,
 })
 export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDestroy {
+  @Input() chartTitle?: string;
   private initialPresetValue: FinancialPresetId = 'sales';
   @Input() set initialPreset(value: FinancialPresetId) {
     if (value && value !== this.initialPresetValue) {
@@ -148,11 +149,15 @@ export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDest
   @ViewChild('gridHost', { read: ElementRef }) gridHost?: ElementRef<HTMLElement>;
   private gridResizeObserver?: ResizeObserver;
   private fitColumns() {
-    if (this.gridHost) this.columnSize.set(financialPivotColumnSize(this.gridHost.nativeElement, this.pivotSignal()));
+    if (this.gridHost) {
+      this.hostWidth.set(this.gridHost.nativeElement.clientWidth);
+      this.columnSize.set(financialPivotColumnSize(this.gridHost.nativeElement, this.pivotSignal()));
+    }
   }
 
   readonly FINANCIAL_COLUMNS = FINANCIAL_COLUMNS;
   readonly columnSize = signal(128);
+  readonly hostWidth = signal(0);
   readonly columnTypes = FINANCIAL_COLUMN_TYPES;
   readonly multiRowHeader = FINANCIAL_MULTI_ROW_HEADER;
   readonly pivotCharts = FINANCIAL_PIVOT_CHARTS;
@@ -193,6 +198,7 @@ export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDest
     this.sourceRows(),
     this.configuratorVisible(),
     this.configuratorMount(),
+    this.hostWidth(),
   ));
 
   ngAfterViewInit(): void {
@@ -249,10 +255,13 @@ export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDest
       if (action === 'chart') {
         this.chartVisible.set(!this.chartVisible());
         if (this.chartVisible() && !this.chart && this.gridElement && this.chartContainer) {
-          this.chart = await mountFinancialChart(this.gridElement.nativeElement, this.chartContainer.nativeElement);
+          this.chart = await mountFinancialChart(this.gridElement.nativeElement, this.chartContainer.nativeElement, this.chartTitle);
         }
       }
-    } catch { this.actionError.set('Could not complete this report action. Please try again.'); }
+    } catch (error) {
+      if (action === 'chart') this.chartVisible.set(false);
+      this.actionError.set(financialActionError(error));
+    }
   }
 
   private replacePivot(config: PivotConfig, preset: FinancialPresetId) {

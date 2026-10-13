@@ -34,6 +34,8 @@ describe('financial analysis reports', () => {
       .toEqual({ type: 'runningTotal', axis: 'columns', field: 'Month' });
     expect(createFinancialPreset('yoy').values[1].calculation)
       .toEqual({ type: 'percentDifferenceFrom', axis: 'columns', field: 'Year', base: 'previous' });
+    expect(createFinancialPreset('ranking').values[1].format)
+      .toEqual({ preset: 'number', options: { maximumFractionDigits: 0 } });
     expect(createFinancialPreset('ranking').values[1].calculation)
       .toEqual({ type: 'rank', axis: 'rows', field: 'Product', order: 'desc' });
   });
@@ -42,6 +44,6 @@ describe('financial analysis reports', () => {
     const first = createFinancialPreset('yoy');
     const second = createFinancialPreset('yoy');
     first.values[1].label = 'Changed';
-    expect(second.values[1].label).toBe('Year-over-year change');
+    expect(second.values[1].label).toBe('YoY change');
   });
 });
