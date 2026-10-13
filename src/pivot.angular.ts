@@ -51,10 +51,7 @@ const isSmallScreen = () => typeof window !== 'undefined' && window.matchMedia('
   template: `
     <div
       class="financial-pivot-showcase grow flex flex-col gap-2 h-full p-2 box-border"
-      [style.position]="expanded() ? 'fixed' : null"
-      [style.inset]="expanded() ? '8px' : null"
-      [style.z-index]="expanded() ? 1000 : null"
-      [style.background]="expanded() ? 'var(--financial-pivot-expanded-background)' : null"
+      [attr.data-expanded]="expanded()"
     >
       <financial-pivot-header
         [state]="headerState"

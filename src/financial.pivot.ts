@@ -174,7 +174,7 @@ export const FINANCIAL_PIVOT_CHARTS: PivotChartsConfig = {
   defaultChartType: 'groupedColumn',
   limits: {
     maxSeries: 120,
-    maxDataPoints: 2_500,
+    maxDataPoints: 50_000,
   },
 };
 
@@ -269,6 +269,14 @@ const PRODUCT_PERFORMANCE: PivotConfig = {
   ...SALES_OVERVIEW,
   rows: ['Product', 'Segment'],
   columns: ['Year', 'Country'],
+  totals: {
+    ...SALES_OVERVIEW.totals,
+    disabledSubtotals: { rows: { fields: ['Product', 'Segment'] } },
+  },
+  columnLevels: {
+    ...SALES_OVERVIEW.columnLevels,
+    0: { ...SALES_OVERVIEW.columnLevels?.[0], subtotalValues: ['Gross Sales'] },
+  },
   values: [
     { prop: 'Gross Sales', aggregator: 'sum' },
     { prop: 'Units Sold', aggregator: 'sum' },
@@ -353,6 +361,43 @@ export function resolveFinancialRows(rows?: DataType[]): FinancialRow[] {
   return rows?.length ? rows as FinancialRow[] : FINANCIAL_DATA;
 }
 
+// Recover stale optional subtotal references in saved or already-mounted presets
+// before applying UI changes such as field visibility. Keep other report choices.
+export function reconcileFinancialSubtotalTargets(config: PivotConfig): PivotConfig {
+  const next = { ...config };
+  const disabled = config.totals?.disabledSubtotals;
+  if (disabled) {
+    next.totals = {
+      ...config.totals,
+      disabledSubtotals: Object.fromEntries(
+        (['rows', 'columns'] as const).flatMap(axis => {
+          const rule = disabled[axis];
+          if (!rule) return [];
+          const fields = config[axis] ?? [];
+          return [[axis, {
+            ...rule,
+            ...(rule.fields ? { fields: rule.fields.filter(field => fields.includes(field)) } : {}),
+            ...(rule.levels ? { levels: rule.levels.filter(level => level < fields.length) } : {}),
+          }]];
+        }),
+      ),
+    };
+  }
+  if (config.columnLevels) {
+    const measures = new Set(config.values.map(value => value.prop));
+    next.columnLevels = Object.fromEntries(
+      Object.entries(config.columnLevels).map(([level, settings]) => [
+        level,
+        settings?.subtotalValues ? {
+          ...settings,
+          subtotalValues: settings.subtotalValues.filter(field => measures.has(field)),
+        } : settings,
+      ]),
+    );
+  }
+  return next;
+}
+
 export function applyFinancialPivotOptions(
   config: PivotConfig | null,
   data: DataType[],
@@ -362,7 +407,7 @@ export function applyFinancialPivotOptions(
 
   const rows = config.rows || [];
   const nextConfig: PivotConfig = {
-    ...config,
+    ...reconcileFinancialSubtotalTargets(config),
     rows,
     hasConfigurator: configuratorVisible,
   };

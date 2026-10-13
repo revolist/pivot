@@ -135,7 +135,7 @@ function PivotShowcase({ rows }: PivotProps) {
   return (
     <div
       className="financial-pivot-showcase grow flex flex-col gap-2 h-full p-2 box-border"
-      style={expanded ? { position: 'fixed', inset: 8, zIndex: 1000, background: 'var(--financial-pivot-expanded-background)' } : undefined}
+      data-expanded={expanded}
     >
       <financial-pivot-header ref={headerRef} />
 

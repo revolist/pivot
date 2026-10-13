@@ -6,6 +6,7 @@ import {
 } from '@revolist/pivot';
 import {
   createFinancialPreset,
+  reconcileFinancialSubtotalTargets,
   type FinancialPresetId,
 } from './financial.pivot';
 
@@ -30,14 +31,14 @@ export function restorePivotConfig(preset: FinancialPresetId): PivotConfig {
     const json = window.localStorage.getItem(PIVOT_STORAGE_KEY);
     if (!json) return fallback;
     const saved = parsePivotStateJson(json);
-    return {
+    return reconcileFinancialSubtotalTargets({
       ...fallback,
       ...saved,
       dimensions: fallback.dimensions,
       rows: saved.rows ?? fallback.rows,
       columns: saved.columns ?? fallback.columns,
       values: saved.values ?? fallback.values,
-    };
+    });
   } catch {
     return fallback;
   }

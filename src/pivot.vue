@@ -1,7 +1,7 @@
 <template>
   <div
     class="financial-pivot-showcase grow flex flex-col gap-2 h-full box-border"
-    :style="expandedStyle"
+    :data-expanded="expanded"
   >
     <financial-pivot-header
       :state.prop="headerState"
@@ -107,11 +107,6 @@ const pivot = computed(() =>
     rows.value,
     configuratorVisible.value,
   ),
-);
-
-const expandedStyle = computed(() => expanded.value
-  ? { position: 'fixed', inset: '8px', zIndex: 1000, background: 'var(--financial-pivot-expanded-background)' }
-  : undefined,
 );
 
 const configUpdate = (event: CustomEvent<PivotConfig>) => {

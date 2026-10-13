@@ -71,9 +71,7 @@ export function load(parentSelector: string, rows: any[] | { isDark?: boolean } 
       expanded,
     };
     gridContainer.style.minWidth = configuratorVisible ? '920px' : '680px';
-    Object.assign(container.style, expanded
-      ? { position: 'fixed', inset: '8px', zIndex: '1000', background: 'var(--financial-pivot-expanded-background)' }
-      : { position: '', inset: '', zIndex: '', background: '' });
+    container.dataset.expanded = String(expanded);
   }
 
   const onPivotConfigUpdate = (event: CustomEvent<PivotConfig>) => {
