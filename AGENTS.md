@@ -17,6 +17,9 @@ The committed registry and exact trial aliases need no authentication token.
   Framework hosts call `src/charts-mount.ts` and share the same dashboard.
 - Operations: `examples/operations/src/OperationsPivot.vue` owns UI;
   `tickets.ts` owns synthetic source data and matching; `pivot.ts` owns config.
+- Import: `examples/import/src/ImportPivot.vue` owns the three-step workspace;
+  `import.model.ts` owns data review and Pivot mapping; `import.worker.ts` owns
+  browser-local file reading. Framework adapters share `import-demo.ts`.
 - Client scale: `examples/scale/src/scale-demo.ts` owns measurements/lifecycle;
   `data.ts` owns generation; `pivot-config.ts` owns config.
 
@@ -39,7 +42,7 @@ of every assignment. Keep required CSS and assets with copied examples.
 - Main/Financial/Charts: `pnpm test`, `pnpm build:frameworks`.
   `pnpm test:e2e` runs browser coverage (requires Playwright Chromium installed).
 - Focused examples: `pnpm --dir examples/<name> test`, then `typecheck` and `build`.
-  Names are `operations`, `scale`.
+  Names are `operations`, `scale`, `import`.
 - Preview the changed flow in a browser. For imported data, check every result,
   row/column/grand total against an independent calculation, including blanks,
   negative amounts and decimals. Do not call a build a browser verification.

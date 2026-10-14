@@ -1,0 +1,4 @@
+html, body, #app, .pivot-import-embed { margin: 0; height: 100%; min-height: 100%; width: 100%; }
+html { height: 100%; }
+body { min-width: 320px; background: #f6f6f7; }
+.import-pivot.is-exploring { min-height: 100vh; }
