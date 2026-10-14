@@ -6,7 +6,7 @@ import {
   type PivotConfig,
 } from '@revolist/pivot';
 import { CONTOSO_DATASET_ID } from './contoso-data';
-import { createFinancialPreset, FINANCIAL_PRESETS, type FinancialPresetId } from './financial.pivot';
+import { createFinancialPreset, FINANCIAL_PRESETS, reconcileFinancialSubtotalTargets, type FinancialPresetId } from './financial.pivot';
 
 const PIVOT_STORAGE_KEY = 'revogrid:pivot-showcase:report:contoso-v2';
 const NAMED_REPORTS_KEY = 'revogrid:pivot-showcase:named-reports:contoso-v2';
@@ -62,9 +62,9 @@ function parseSavedReport(saved: { preset?: FinancialPresetId; state?: string })
       ? saved.preset! : 'sales';
     const fallback = createFinancialPreset(preset);
     const state = parsePivotStateJson(saved.state ?? '');
-    return { preset, config: { ...fallback, ...state, dimensions: fallback.dimensions,
+    return { preset, config: reconcileFinancialSubtotalTargets({ ...fallback, ...state, dimensions: fallback.dimensions,
       rows: state.rows ?? fallback.rows, columns: state.columns ?? fallback.columns,
-      values: state.values ?? fallback.values } };
+      values: state.values ?? fallback.values }) };
   } catch { return null; }
 }
 

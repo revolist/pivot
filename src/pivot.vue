@@ -2,7 +2,7 @@
   <div
     class="financial-pivot-showcase grow flex flex-col gap-2 h-full box-border"
     :class="{ 'financial-pivot-showcase--chart': chartVisible }"
-    :style="expandedStyle"
+    :data-expanded="expanded"
   >
     <financial-pivot-header
       :state.prop="headerState"
@@ -192,11 +192,6 @@ const toggleFields = () => {
     configuratorVisible.value = true;
   }
 };
-
-const expandedStyle = computed(() => expanded.value
-  ? { position: 'fixed' as const, inset: '8px', zIndex: 1000, background: 'var(--financial-pivot-expanded-background)' }
-  : undefined,
-);
 
 const configUpdate = (event: CustomEvent<PivotConfig>) => {
   pivotConfig.value = event.detail || createFinancialPreset();

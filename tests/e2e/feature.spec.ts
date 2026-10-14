@@ -68,6 +68,36 @@ test(`${feature.title} starts with a clear sales report and restores only on req
   expect(errors).toEqual([]);
 });
 
+for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+  test(`workspace expansion fits the viewport and restores the report at ${viewport.width}px`, async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    const workspace = page.locator('.financial-pivot-showcase');
+    await expect(page.getByRole('columnheader', { name: 'Grand Total' }).first()).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('button', { name: 'Expand workspace' }).click();
+    await expect(workspace).toHaveAttribute('data-expanded', 'true');
+    const bounds = await workspace.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBe(8);
+    expect(bounds!.y).toBe(8);
+    expect(bounds!.width).toBe(viewport.width - 16);
+    expect(bounds!.height).toBeLessThanOrEqual(viewport.height - 16);
+    expect(await page.locator('body').evaluate(body => getComputedStyle(body).overflow)).toBe('hidden');
+    await page.getByRole('tab', { name: 'Product Performance' }).click();
+    await page.getByRole('button', { name: 'Fields', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Pivot fields' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Collapse workspace' }).click();
+    await expect(workspace).toHaveAttribute('data-expanded', 'false');
+    expect(await workspace.evaluate(element => getComputedStyle(element).position)).not.toBe('fixed');
+    expect(await page.locator('body').evaluate(body => getComputedStyle(body).overflow)).not.toBe('hidden');
+    await expect(page.getByRole('tab', { name: 'Product Performance' })).toHaveAttribute('aria-selected', 'true');
+    expect(errors).toEqual([]);
+  });
+}
+
 test('summary follows the grid Pivot config and hides when it is cleared', async ({ page }) => {
   await page.goto('/');
   const summary = page.locator('.pivot-summary-panel');

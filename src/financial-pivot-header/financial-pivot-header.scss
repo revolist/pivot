@@ -4,6 +4,21 @@
   --financial-pivot-expanded-background: var(--sl-color-bg, #ffffff);
 }
 
+.financial-pivot-showcase[data-expanded='true'] {
+  position: fixed;
+  inset: 8px;
+  z-index: 1000;
+  height: auto;
+  max-height: calc(100dvh - 16px);
+  padding: 8px;
+  overflow: hidden;
+  background: var(--financial-pivot-expanded-background);
+}
+
+body:has(.financial-pivot-showcase[data-expanded='true']) {
+  overflow: hidden;
+}
+
 .financial-pivot-showcase .pivot-config {
   --pv-cfg-width: 304px;
   overflow-x: hidden;
@@ -22,6 +37,7 @@ financial-pivot-header {
   --financial-header-text: #0f172a;
 
   display: block;
+  flex: 0 0 auto;
   width: 100%;
   color: var(--financial-header-text);
 }
@@ -367,4 +383,13 @@ financial-pivot-header {
 @media (max-width: 1100px) {
   .financial-pivot-header__toolbar { flex-wrap: wrap; }
   .financial-pivot-header__actions { justify-content: flex-start; }
+}
+
+// Keep the mobile configurator inside its host; the grid virtualizes wide reports.
+// This overrides the desktop minimum supplied by each framework wrapper.
+@media (max-width: 767px) {
+  .financial-pivot-showcase .pivot-grid-container {
+    min-width: 0 !important;
+    width: 100%;
+  }
 }

@@ -115,9 +115,7 @@ export function load(
     chartContainer.hidden = !chartVisible;
     container.classList.toggle('financial-pivot-showcase--chart', chartVisible);
     scrollContainer.setAttribute('aria-hidden', String(chartVisible));
-    Object.assign(container.style, expanded
-      ? { position: 'fixed', inset: '8px', zIndex: '1000', background: 'var(--financial-pivot-expanded-background)' }
-      : { position: '', inset: '', zIndex: '', background: '' });
+    container.dataset.expanded = String(expanded);
     if (grid) fitFinancialPivotColumns(grid, gridContainer, pivotConfig);
   }
 

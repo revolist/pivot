@@ -449,6 +449,43 @@ export function resolveFinancialRows(rows?: DataType[]): DataType[] {
   return rows ?? [];
 }
 
+// Recover stale optional subtotal references in saved or already-mounted presets
+// before applying UI changes such as field visibility. Keep other report choices.
+export function reconcileFinancialSubtotalTargets(config: PivotConfig): PivotConfig {
+  const next = { ...config };
+  const disabled = config.totals?.disabledSubtotals;
+  if (disabled) {
+    next.totals = {
+      ...config.totals,
+      disabledSubtotals: Object.fromEntries(
+        (['rows', 'columns'] as const).flatMap(axis => {
+          const rule = disabled[axis];
+          if (!rule) return [];
+          const fields = config[axis] ?? [];
+          return [[axis, {
+            ...rule,
+            ...(rule.fields ? { fields: rule.fields.filter(field => fields.includes(field)) } : {}),
+            ...(rule.levels ? { levels: rule.levels.filter(level => level < fields.length) } : {}),
+          }]];
+        }),
+      ),
+    };
+  }
+  if (config.columnLevels) {
+    const measures = new Set(config.values.map(value => value.prop));
+    next.columnLevels = Object.fromEntries(
+      Object.entries(config.columnLevels).map(([level, settings]) => [
+        level,
+        settings?.subtotalValues ? {
+          ...settings,
+          subtotalValues: settings.subtotalValues.filter(field => measures.has(field)),
+        } : settings,
+      ]),
+    );
+  }
+  return next;
+}
+
 export function applyFinancialPivotOptions(
   config: PivotConfig | null,
   data: DataType[],
@@ -461,7 +498,7 @@ export function applyFinancialPivotOptions(
   const rows = config.rows || [];
   const valueProps = new Set(config.values.map((value) => value.prop));
   const nextConfig: PivotConfig = {
-    ...config,
+    ...reconcileFinancialSubtotalTargets(config),
     rows,
     // Generated measure columns inherit dimension filters. Keep their filters
     // out of the headers, including Grand Total, as fields are rearranged.
