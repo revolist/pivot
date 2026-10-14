@@ -178,3 +178,14 @@ under the license supplied with your subscription.
 ### Theme integration
 
 All demos follow the document’s `dark`/`light` class or `data-theme` attribute, falling back to the operating system preference. `src/shared/theme.ts` owns detection and live updates; hosts dispose its observer when unmounted. Grids use the public `compact` and `darkCompact` themes. Copy the shared helper alongside the focused example when reusing its source.
+
+### Pinned trial build compatibility
+
+The public Pro/Pivot 2.10.0 trial artifacts contain an obfuscation defect: six
+Advanced Filter class self-references point to Core BasePlugin. The Vite plugin
+in `scripts/trial-filter-identity.mjs` repairs those identifier bindings at build
+time for these exact trial versions. It runs for development and production,
+preserves evaluator guards and filtering behavior, and leaves corrected bundles
+unchanged. `pnpm test:trial-compatibility` checks the repair against both installed
+artifacts and rejects unexpected shapes. Remove this compatibility plugin when
+upgrading to a corrected trial release. No runtime prototype patch is installed.

@@ -76,6 +76,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
     await page.goto('/');
     const workspace = page.locator('.financial-pivot-showcase');
     await expect(page.getByRole('columnheader', { name: 'Grand Total' }).first()).toBeVisible({ timeout: 20_000 });
+    const initialOverflow = await page.locator('body').evaluate(body => getComputedStyle(body).overflow);
     await page.getByRole('button', { name: 'Expand workspace' }).click();
     await expect(workspace).toHaveAttribute('data-expanded', 'true');
     const bounds = await workspace.boundingBox();
@@ -89,10 +90,10 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
     await page.getByRole('button', { name: 'Fields', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Pivot fields' })).toBeVisible();
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: 'Collapse workspace' }).click();
+    await page.getByRole('button', { name: 'Exit expanded workspace' }).click();
     await expect(workspace).toHaveAttribute('data-expanded', 'false');
     expect(await workspace.evaluate(element => getComputedStyle(element).position)).not.toBe('fixed');
-    expect(await page.locator('body').evaluate(body => getComputedStyle(body).overflow)).not.toBe('hidden');
+    expect(await page.locator('body').evaluate(body => getComputedStyle(body).overflow)).toBe(initialOverflow);
     await expect(page.getByRole('tab', { name: 'Product Performance' })).toHaveAttribute('aria-selected', 'true');
     expect(errors).toEqual([]);
   });
@@ -262,4 +263,17 @@ test('Product Performance PDF shows grouped row labels instead of empty rows', a
   await expect(printTable.locator('tbody tr.total')).toContainText('Grand Total');
   await expect(printTable.locator('tbody tr.total')).toContainText('$7,776,899.28');
   expect(await printTable.locator('tbody').innerText()).not.toMatch(/\.\d{3,}/);
+});
+
+
+test('media-selected dark reports keep readable headers and group rows', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  for (const route of ['/', '/financial.html']) {
+    await page.goto(route);
+    await expect(page.getByRole('columnheader', { name: 'Grand Total' }).first()).toBeVisible();
+    const surface = page.locator('.pivot-grid-container');
+    await expect(surface).toHaveCSS('background-color', 'rgb(17, 17, 17)');
+    await expect(page.locator('financial-pivot-header')).toHaveCSS('color', 'rgb(245, 245, 245)');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
 });

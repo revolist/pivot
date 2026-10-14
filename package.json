@@ -34,13 +34,14 @@
     "build:frameworks": "node scripts/build-frameworks.mjs",
     "build:pages": "pnpm build && node scripts/build-pages.mjs",
     "preview": "vite preview",
-    "test": "pnpm test:unit && pnpm test:repository",
+    "test": "pnpm test:trial-compatibility && pnpm test:unit && pnpm test:repository",
     "test:unit": "vitest run",
     "test:repository": "node scripts/verify-repository.mjs",
     "test:e2e": "playwright test",
     "media:verify": "node scripts/verify-repository.mjs --media",
     "media:inspect": "pnpm build && node scripts/record-media.mjs --inspect",
-    "media:record": "pnpm build && node scripts/record-media.mjs"
+    "media:record": "pnpm build && node scripts/record-media.mjs",
+    "test:trial-compatibility": "node --test scripts/trial-filter-identity.test.mjs"
   },
   "dependencies": {
     "@angular/common": "20.3.26",

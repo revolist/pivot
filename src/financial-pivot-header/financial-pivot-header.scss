@@ -29,6 +29,16 @@ body:has(.financial-pivot-showcase[data-expanded='true']) {
   width: 100%;
 }
 
+/* The standalone host may select dark mode through the grid's media-aware theme. */
+.financial-pivot-showcase:has(revo-grid[theme^='dark']) {
+  --rv-ui-surface: #1f1f1f;
+  --rv-ui-surface-sunken: #111111;
+  --rv-ui-text: #f5f5f5;
+  --rv-ui-text-muted: #a3a3a3;
+  --rv-ui-border: #404040;
+  --financial-pivot-expanded-background: var(--rv-ui-surface-sunken);
+}
+
 :where(.dark, [data-theme^='dark']) .financial-pivot-showcase {
   --financial-pivot-expanded-background: var(--rv-ui-surface-sunken);
 }
@@ -42,7 +52,8 @@ financial-pivot-header {
   color: var(--financial-header-text);
 }
 
-:where(.dark, [data-theme^='dark']) financial-pivot-header {
+:where(.dark, [data-theme^='dark']) financial-pivot-header,
+.financial-pivot-showcase:has(revo-grid[theme^='dark']) financial-pivot-header {
   --financial-header-text: var(--rv-ui-text);
 }
 

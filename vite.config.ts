@@ -3,9 +3,11 @@ import { fileURLToPath } from 'node:url';
 import angular from '@analogjs/vite-plugin-angular';
 import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
+import { trialFilterIdentityPlugin } from './scripts/trial-filter-identity.mjs';
 
 export default defineConfig(({ mode }) => ({
   base: './',
+  optimizeDeps: { exclude: ['@revolist/revogrid-pro', '@revolist/pivot'] },
   build: {
     rollupOptions: {
       input: {
@@ -40,6 +42,7 @@ export default defineConfig(({ mode }) => ({
     ...(mode === 'angular' ? { mainFields: ['module'] } : {}),
   },
   plugins: [
+    trialFilterIdentityPlugin(),
     ...(mode === 'angular' ? [angular()] : []),
     react(),
     vue({ template: { compilerOptions: { isCustomElement: (tag) => tag.startsWith('revo-') || tag.startsWith('revogr-') || tag.startsWith('financial-') } } }),
