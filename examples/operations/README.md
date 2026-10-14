@@ -27,9 +27,9 @@ Adapt your ticket fields in `tickets.ts` and `pivot.ts` together. Keep unresolve
 resolution hours blank so averages count only resolved tickets. All hosts share
 the Vue workspace, which owns filtering and inspection; copy its supporting
 files and styles rather than one wrapper alone.
-The mount module also imports the repository's root `demo-host.css`; preserve
-that relative path when moving the example, or update the import to your own
-application stylesheet. Cloning this repository keeps it in the right place.
+The standalone entry point `main.ts` imports the repository's `demo-host.css`
+for page sizing. Embedded framework hosts use their application's page styles;
+the shared mount module imports only component styles.
 
 ## Verify
 

@@ -1,6 +1,5 @@
 import { createApp } from 'vue';
 import Demo from './OperationsPivot.vue';
-import '../../../demo-host.css';
 import '@revolist/revogrid-pro/styles.css';
 import '@revolist/pivot/styles.css';
 

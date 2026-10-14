@@ -1,3 +1,4 @@
+import '../../../demo-host.css';
 import { mountOperationsDemo } from './operations-demo';
 
 const app = document.querySelector<HTMLElement>('#app');
