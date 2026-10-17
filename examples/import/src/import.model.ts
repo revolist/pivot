@@ -1,10 +1,10 @@
-import { formatIsoDate, formatIsoDateTime, isValidIsoDate, isValidIsoDateTime, parseIsoDate } from '@revolist/revogrid-pro';
 import type { PivotConfig, PivotConfigDimension } from '@revolist/pivot';
 import { LIMITS, type Cell, type Field, type FieldType, type Matrix, type Workbook } from './import.types';
 
 export function displayCell(cell: Cell | undefined): string {
   if (cell instanceof Date) {
-    return cell.getUTCHours() || cell.getUTCMinutes() || cell.getUTCSeconds() || cell.getUTCMilliseconds() ? formatIsoDateTime(cell) : formatIsoDate(cell);
+    const iso = cell.toISOString();
+    return cell.getUTCHours() || cell.getUTCMinutes() || cell.getUTCSeconds() || cell.getUTCMilliseconds() ? iso : iso.split('T')[0];
   }
   return cell == null ? '' : String(cell);
 }
@@ -23,7 +23,14 @@ export function numberValue(cell: Cell, decimal: '.' | ','): number | undefined 
 }
 function isDate(cell: Cell) {
   if (cell instanceof Date) return !Number.isNaN(cell.getTime());
-  return typeof cell === 'string' && (isValidIsoDateTime(cell) || (isValidIsoDate(cell) && formatIsoDate(parseIsoDate(cell)) === cell));
+  // The standalone importer accepts canonical ISO values only. The shared dates
+  // workspace is private and these helpers are no longer public Pro exports.
+  if (typeof cell !== 'string') return false;
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(cell);
+  if (!dateOnly && !/^\d{4}-\d{2}-\d{2}T.+Z$/.test(cell)) return false;
+  const parsed = new Date(dateOnly ? `${cell}T00:00:00Z` : cell);
+  if (!Number.isFinite(parsed.getTime())) return false;
+  return (dateOnly ? parsed.toISOString().split('T')[0] : parsed.toISOString()) === cell;
 }
 
 export function detectHeader(cells: Matrix): number {

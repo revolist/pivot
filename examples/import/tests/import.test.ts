@@ -60,6 +60,25 @@ describe('safe normalization and report mapping', () => {
     const invalid = inspectTable([['Date'],['2026-02-30']],1,2,2,'.');
     expect(invalid.fields[0].type).toBe('text');
   });
+  it.each([
+    ['2024-02-29', 'date'],
+    ['2026-02-29', 'text'],
+    ['2026-13-01', 'text'],
+    ['2026-03-29T01:30:00.123Z', 'date'],
+    ['2026-03-29T01:30:00Z', 'text'],
+    ['2026-03-29T01:30:00.000+00:00', 'text'],
+    ['2026-03-29T01:30:00', 'text'],
+    [' 2026-03-29 ', 'text'],
+  ])('classifies canonical ISO input %s as %s', (value, expected) => {
+    const { fields, source } = inspectTable([['Date'], [value]], 1, 2, 2, '.');
+    expect(fields[0].type).toBe(expected);
+    expect(prepareSource(source, fields, '.').rows[0].field_0).toBe(value);
+  });
+  it('preserves UTC dates and timestamp milliseconds from Excel Date cells', () => {
+    const values = [new Date('2026-03-29T00:00:00.000Z'), new Date('2026-03-29T00:00:00.001Z')];
+    const { fields, source } = inspectTable([['Date'], ...values.map(value => [value])], 1, 2, 3, '.');
+    expect(prepareSource(source, fields, '.').rows.map(row => row.field_0)).toEqual(['2026-03-29', '2026-03-29T00:00:00.001Z']);
+  });
   it('includes all accepted rows and exposes every field through Pivot dimensions', () => {
     const cells = sampleWorkbook().sheets[0].cells;
     const {fields,source} = inspectTable(cells,1,2,cells.length,'.');
