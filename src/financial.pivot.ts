@@ -206,11 +206,6 @@ const SALES_OVERVIEW: PivotConfig = {
     enabled: true,
     // Reveal one hierarchy level at a time when fields are added or reordered.
     collapsed: true,
-    aggregator: {
-      Revenue: 'sum',
-      'Gross Profit': 'sum',
-      Quantity: 'sum',
-    },
     placeholder: 'Quarter Total',
   },
   columnLevels: { 0: { collapsible: true, collapsed: true, filterable: false, sortable: false } },
@@ -236,7 +231,6 @@ const PROFITABILITY: PivotConfig = {
   columnCollapse: {
     enabled: true,
     collapsed: true,
-    aggregator: { Revenue: 'sum', Cost: 'sum', 'Gross Profit': 'sum' },
     placeholder: 'Period Total',
   },
 };
@@ -256,7 +250,6 @@ const PRODUCT_PERFORMANCE: PivotConfig = {
   columnCollapse: {
     enabled: true,
     collapsed: true,
-    aggregator: { Revenue: 'sum', Quantity: 'sum' },
     placeholder: 'Market Total',
   },
 };

@@ -255,3 +255,49 @@ test('Contoso category year-over-year changes match source revenue', async ({ pa
       .toBeCloseTo((current - previous) / previous, 10);
   }
 });
+
+test('collapsed quarters follow measure changes and retain their values after expansion', async ({ page }) => {
+  test.setTimeout(90_000);
+  await report(page, '/', 'Sales Overview');
+  const grid = page.locator('revo-grid').first();
+  const active = rows.filter(row => row.Year === 2025 && row.Country === 'Australia');
+  for (const aggregator of ['min', 'max', 'avg'] as const) {
+    const expected = (items: Sale[]) => {
+      const values = items.map(row => row.Revenue);
+      return aggregator === 'avg' ? values.reduce((total, value) => total + value, 0) / values.length
+        : aggregator === 'min' ? Math.min(...values) : Math.max(...values);
+    };
+    await grid.evaluate((element: HTMLRevoGridElement, selected) => {
+      element.pivot = {
+        ...element.pivot,
+        rows: ['Category'],
+        values: [{ prop: 'Revenue', aggregator: selected }],
+        filterSelections: { Year: [2025], Country: ['Australia'] },
+        collapsedColumns: true,
+      };
+    }, aggregator);
+    const checkCollapsed = async () => {
+      await expect.poll(() => grid.evaluate((element: HTMLRevoGridElement) =>
+        Number(element.pinnedBottomSource?.[0]?.['Q1|__pivot_collapse__|Revenue'])))
+        .toBeCloseTo(expected(active.filter(row => row.Quarter === 'Q1')), 8);
+      const actual = await grid.evaluate((element: HTMLRevoGridElement) => ({
+        source: element.source as (Sale & Record<string, number | string>)[],
+        totals: element.pinnedBottomSource?.[0] as Record<string, number | string>,
+      }));
+      expect(Number(actual.totals['__pivot_grand_total__|Revenue'])).toBeCloseTo(expected(active), 8);
+      for (const quarter of ['Q1', 'Q2', 'Q3', 'Q4']) {
+        const matching = active.filter(row => row.Quarter === quarter);
+        expect(Number(actual.totals[`${quarter}|__pivot_collapse__|Revenue`])).toBeCloseTo(expected(matching), 8);
+        for (const item of actual.source.filter(row => String(row.__rowKey).startsWith('leaf:'))) {
+          expect(Number(item[`${quarter}|__pivot_collapse__|Revenue`]))
+            .toBeCloseTo(expected(matching.filter(row => row.Category === item.Category)), 8);
+        }
+      }
+    };
+    await checkCollapsed();
+    await page.getByRole('button', { name: 'Expand Q1', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Collapse Q1', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Collapse Q1', exact: true }).click();
+    await checkCollapsed();
+  }
+});

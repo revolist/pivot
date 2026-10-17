@@ -4,6 +4,11 @@ import { exportPivotReportJson, importPivotReportJson, loadNamedPivotReport, loa
 
 describe('financial preset subtotal targets', () => {
   afterEach(() => vi.unstubAllGlobals());
+  it.each(FINANCIAL_PRESETS)('$label lets collapsed columns inherit the selected measure aggregation', ({ id }) => {
+    const config = createFinancialPreset(id);
+    expect(typeof config.columnCollapse === 'object' ? config.columnCollapse.aggregator : undefined).toBeUndefined();
+  });
+
   it.each(FINANCIAL_PRESETS)('$label excludes subtotals only for its row fields', ({ id }) => {
     const config = createFinancialPreset(id);
     expect(config.totals?.subtotals).toBe(false);
