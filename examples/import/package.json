@@ -13,8 +13,8 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "7.3.1",
     "@revolist/revogrid": "4.29.0",
-    "@revolist/pivot": "npm:@revolist/pivot-trial@3.0.9",
-    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@3.0.9",
+    "@revolist/pivot": "npm:@revolist/pivot-trial@3.0.10",
+    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@3.0.10",
     "@revolist/vue3-datagrid": "4.29.0",
     "read-excel-file": "9.2.0",
     "vue": "3.5.40"
