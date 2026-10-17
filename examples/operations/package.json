@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@revolist/revogrid": "4.29.0",
-    "@revolist/pivot": "npm:@revolist/pivot-trial@3.0.1",
-    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@3.0.1",
+    "@revolist/pivot": "npm:@revolist/pivot-trial@3.0.6",
+    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@3.0.6",
     "@revolist/vue3-datagrid": "4.29.0",
     "vue": "^3.5.21"
   },
