@@ -35,3 +35,10 @@ Run `pnpm install`, then `pnpm dev` for the client workload demo. It runs entire
 The displayed timings distinguish generation, source/config assignment to `pivot-model-changed`, the following two animation frames, and a later layout interaction. The Pivot interval includes browser scheduling and plugin work; the animation frame interval is a paint estimate. Measurement limits appear in the metric tooltips. Compare runs on the same browser/device and note that the demonstration does not claim a speed advantage over another product.
 
 Run `pnpm test`, `pnpm typecheck`, and `pnpm build` to verify the standalone example. Source rows are generated locally; no imported user data or telemetry leaves the browser.
+
+
+## Calculation policy
+
+This benchmark exercises its generated finite-number fixture and configured callbacks. Its timings do not certify null/invalid policies, decimal precision or identical local/server calculations. For a business report, use explicit V2 numeric/scalar operations and an execution pin; review count meaning and own-grain totals separately from the timing control.
+
+See the [source-verified aggregation guide](https://pro.rv-grid.com/guides/pivot/concepts/aggregations/) and [safe saved-report configuration](https://pro.rv-grid.com/guides/migrations/#pivot-calculation-policies-and-saved-reports). Keep this standalone workspace's installed reader/API version in view before copying configuration from another release.

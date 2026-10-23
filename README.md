@@ -189,3 +189,10 @@ preserves evaluator guards and filtering behavior, and leaves corrected bundles
 unchanged. `pnpm test:trial-compatibility` checks the repair against both installed
 artifacts and rejects unexpected shapes. Remove this compatibility plugin when
 upgrading to a corrected trial release. No runtime prototype patch is installed.
+
+
+## Calculation policy
+
+The finite-number example uses default numeric callbacks. For new reports, use explicit V2 numeric/scalar presets and a persisted execution pin. Default AVG includes null as zero and count counts occurrences; numeric presets skip null/missing and error on invalid input. A pin prevents accidental engine switching, not identical local/server results.
+
+See the [source-verified aggregation guide](https://pro.rv-grid.com/guides/pivot/concepts/aggregations/) and [safe saved-report configuration](https://pro.rv-grid.com/guides/migrations/#pivot-calculation-policies-and-saved-reports). Keep this standalone workspace's installed reader/API version in view before copying configuration from another release.

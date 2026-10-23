@@ -43,3 +43,10 @@ Focused Vue demo of support-ticket volume, average resolution time, SLA breaches
 Select a team or priority to filter the Pivot and the source ticket grid together. The RevoGrid detail view lists the exact records in the selected scope, with scrolling and 15-record pages controlled by `PaginationPlugin`. Focus a Pivot value cell, then choose **Inspect focused value cell** to show the matching records from that same filtered source. Public Pivot row and column metadata define the focused cell's scope. The detail panel identifies whether it shows the selected scope or a Pivot cell.
 
 Run `pnpm test`, `pnpm build`, or `pnpm dev` from this package. The source also includes Vanilla TypeScript, React, and Angular embed variants used by the docs.
+
+
+## Calculation policy
+
+This demo registers `resolvedAverage`, an application callback that averages eligible resolved-hour observations and excludes null unresolved hours. It does not use default `avg`, which includes null as zero. Ticket totals sum the explicit Ticket Count field. For reusable numeric reports, use V2 numeric/scalar presets; preserve this deliberate callback policy when saving or converting an existing report.
+
+See the [source-verified aggregation guide](https://pro.rv-grid.com/guides/pivot/concepts/aggregations/) and [safe saved-report configuration](https://pro.rv-grid.com/guides/migrations/#pivot-calculation-policies-and-saved-reports). Keep this standalone workspace's installed reader/API version in view before copying configuration from another release.
