@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@revolist/revogrid': 4.29.0
+  '@revolist/revogrid': 4.29.1
 
 importers:
 
@@ -27,26 +27,26 @@ importers:
         specifier: 20.3.26
         version: 20.3.26(@angular/common@20.3.26(@angular/core@20.3.26(@angular/compiler@20.3.26)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/compiler@20.3.26)(@angular/core@20.3.26(@angular/compiler@20.3.26)(rxjs@7.8.2)(zone.js@0.15.1))(@angular/platform-browser@20.3.26(@angular/common@20.3.26(@angular/core@20.3.26(@angular/compiler@20.3.26)(rxjs@7.8.2)(zone.js@0.15.1))(rxjs@7.8.2))(@angular/core@20.3.26(@angular/compiler@20.3.26)(rxjs@7.8.2)(zone.js@0.15.1)))
       '@revolist/angular-datagrid':
-        specifier: 4.29.0
-        version: 4.29.0
+        specifier: 4.29.1
+        version: 4.29.1
       '@revolist/pivot':
-        specifier: npm:@revolist/pivot-trial@3.0.12
-        version: '@revolist/pivot-trial@3.0.12'
+        specifier: npm:@revolist/pivot-trial@3.0.14
+        version: '@revolist/pivot-trial@3.0.14'
       '@revolist/react-datagrid':
-        specifier: 4.29.0
-        version: 4.29.0
+        specifier: 4.29.1
+        version: 4.29.1
       '@revolist/revogrid':
-        specifier: 4.29.0
-        version: 4.29.0
+        specifier: 4.29.1
+        version: 4.29.1
       '@revolist/revogrid-column-numeral':
         specifier: 2.0.11
         version: 2.0.11
       '@revolist/revogrid-pro':
-        specifier: npm:@revolist/rv-pro-trial@3.0.12
-        version: '@revolist/rv-pro-trial@3.0.12'
+        specifier: npm:@revolist/rv-pro-trial@3.0.14
+        version: '@revolist/rv-pro-trial@3.0.14'
       '@revolist/vue3-datagrid':
-        specifier: 4.29.0
-        version: 4.29.0
+        specifier: 4.29.1
+        version: 4.29.1
       fflate:
         specifier: 0.8.3
         version: 0.8.3
@@ -124,17 +124,17 @@ importers:
         specifier: 7.3.1
         version: 7.3.1
       '@revolist/pivot':
-        specifier: npm:@revolist/pivot-trial@3.0.12
-        version: '@revolist/pivot-trial@3.0.12'
+        specifier: npm:@revolist/pivot-trial@3.0.14
+        version: '@revolist/pivot-trial@3.0.14'
       '@revolist/revogrid':
-        specifier: 4.29.0
-        version: 4.29.0
+        specifier: 4.29.1
+        version: 4.29.1
       '@revolist/revogrid-pro':
-        specifier: npm:@revolist/rv-pro-trial@3.0.12
-        version: '@revolist/rv-pro-trial@3.0.12'
+        specifier: npm:@revolist/rv-pro-trial@3.0.14
+        version: '@revolist/rv-pro-trial@3.0.14'
       '@revolist/vue3-datagrid':
-        specifier: 4.29.0
-        version: 4.29.0
+        specifier: 4.29.1
+        version: 4.29.1
       read-excel-file:
         specifier: 9.2.0
         version: 9.2.0
@@ -170,17 +170,17 @@ importers:
   examples/operations:
     dependencies:
       '@revolist/pivot':
-        specifier: npm:@revolist/pivot-trial@3.0.12
-        version: '@revolist/pivot-trial@3.0.12'
+        specifier: npm:@revolist/pivot-trial@3.0.14
+        version: '@revolist/pivot-trial@3.0.14'
       '@revolist/revogrid':
-        specifier: 4.29.0
-        version: 4.29.0
+        specifier: 4.29.1
+        version: 4.29.1
       '@revolist/revogrid-pro':
-        specifier: npm:@revolist/rv-pro-trial@3.0.12
-        version: '@revolist/rv-pro-trial@3.0.12'
+        specifier: npm:@revolist/rv-pro-trial@3.0.14
+        version: '@revolist/rv-pro-trial@3.0.14'
       '@revolist/vue3-datagrid':
-        specifier: 4.29.0
-        version: 4.29.0
+        specifier: 4.29.1
+        version: 4.29.1
       vue:
         specifier: ^3.5.21
         version: 3.5.40(typescript@6.0.3)
@@ -201,14 +201,14 @@ importers:
   examples/scale:
     dependencies:
       '@revolist/pivot':
-        specifier: npm:@revolist/pivot-trial@3.0.12
-        version: '@revolist/pivot-trial@3.0.12'
+        specifier: npm:@revolist/pivot-trial@3.0.14
+        version: '@revolist/pivot-trial@3.0.14'
       '@revolist/revogrid':
-        specifier: 4.29.0
-        version: 4.29.0
+        specifier: 4.29.1
+        version: 4.29.1
       '@revolist/revogrid-pro':
-        specifier: npm:@revolist/rv-pro-trial@3.0.12
-        version: '@revolist/rv-pro-trial@3.0.12'
+        specifier: npm:@revolist/rv-pro-trial@3.0.14
+        version: '@revolist/rv-pro-trial@3.0.14'
     devDependencies:
       typescript:
         specifier: ~6.0.3
@@ -1531,29 +1531,29 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  '@revolist/angular-datagrid@4.29.0':
-    resolution: {integrity: sha512-bltrRHsFZweCZEcKDRoVBClyLo7I150V/tfmCAXL13E7eZZDGmMJboV/6IgWYIJacprxAC4Jard4dLWFhSjUMw==}
+  '@revolist/angular-datagrid@4.29.1':
+    resolution: {integrity: sha512-rblhYQQdl4cPJrQIX9TdRV+q0NWvwjGMyZnzsOxPoZNPG0lQ88t/5X0ktkak7XyaRcvOC1CoTpr/l/9EyytbUg==}
 
-  '@revolist/charts-trial@3.0.12':
-    resolution: {integrity: sha512-xhP242qMi0bnFcW5p/gfNzNV5+vCTwtpfVBiJIEkM0sLZV/N7cQFZkMmqRHM15IhBhdxAfdLcLqQPL7YKTzeUw==, tarball: https://trial.rv-grid.com/@revolist/charts-trial/-/36ee321cf8e1bf3c62763f3b9e5ea48563611633}
+  '@revolist/charts-trial@3.0.14':
+    resolution: {integrity: sha512-uckasMY4oGiqrZv1pG5AyNA23g6AXaPWLHS+NSGugy0YDGrnm473hK5mXzo6gEnnlsWtMK+dorDU2UzYr9JUag==, tarball: https://trial.rv-grid.com/@revolist/charts-trial/-/932ac91d4ea8ef580f1da4fdb2876e0919fdd00d}
 
-  '@revolist/pivot-trial@3.0.12':
-    resolution: {integrity: sha512-yAYu9a9jM9ZBY2QUrtsIxGHN6CebyxHCvPq9T5c65wX4J1rgZFt9ixLYqUoA74yuMf5xt/Ll1UK2AEKyJN1kFQ==, tarball: https://trial.rv-grid.com/@revolist/pivot-trial/-/cd1888f1fff090295570c9c9d1f3fb898fce9fab}
+  '@revolist/pivot-trial@3.0.14':
+    resolution: {integrity: sha512-dGdCbaAjhDzmDbHYFt9wbDIW7UWkjQ9LVTU8KQxTA4lHKuBxNtSY1Bg9wU8fkO2F82j3C9BYGHmjQHclttnc0A==, tarball: https://trial.rv-grid.com/@revolist/pivot-trial/-/8c890ec39cd89428321d357908d6831960ae2a88}
 
-  '@revolist/react-datagrid@4.29.0':
-    resolution: {integrity: sha512-u7wjWfNK5+XpbXQnbf6A52OKnp1bA6O6f+6ywJ5yUULpKkN5DV+RsZHSImWHL5FB1BE6qx8MGQC6KsZYfvgfiQ==}
+  '@revolist/react-datagrid@4.29.1':
+    resolution: {integrity: sha512-Y1Wso5MM2gFJgF4C+o3jpdEtdwpVZKocKnz0aloicezfFrz3OGcf46uUSP0VfSqyhp9TdEFeERokDSJ+MoleSQ==}
 
   '@revolist/revogrid-column-numeral@2.0.11':
     resolution: {integrity: sha512-p0YzZZdS5xuLE2jwZxHXAPgvZt6/M/IcqzycpAqXuNaMgYQgb0tWXMCEfrkcqytKWw1WDBa1AboTFV+suVRRkg==}
 
-  '@revolist/revogrid@4.29.0':
-    resolution: {integrity: sha512-LpnIXaOd4/UVcNK9ZRAIgXP1f+mkGwFCPu6Fii/pGrlqa+QqRNN4r51Iwe+4KAG913SSjutgkHqBURRphtRO2Q==}
+  '@revolist/revogrid@4.29.1':
+    resolution: {integrity: sha512-j/m52cS6ev4aOpskj2lxIc+vP1gxNFGJ1K3hrp6vM1lw/JJctQN4iEgr+8qhzkEVrmd5VoAa163SVB00mR4c2Q==}
 
-  '@revolist/rv-pro-trial@3.0.12':
-    resolution: {integrity: sha512-MX9lXhdTZg4nK5zWL4FU7Vi2IJl6F9HEiXEQsHmfiaq3Dqartz01Dp3ceYmMiW/ClgbPjy0xWwLZEdVn887e3w==, tarball: https://trial.rv-grid.com/@revolist/rv-pro-trial/-/12ab8dd3d8967a8f92270d0db480358ad7df80af}
+  '@revolist/rv-pro-trial@3.0.14':
+    resolution: {integrity: sha512-sGvMqVVxWfSFeZJpCetjtUNtDwlfYURdSq+vsEeWBQGJKSfCaHAd2YRZIoVeHGneYymyS8ATbJbugin43CFB5Q==, tarball: https://trial.rv-grid.com/@revolist/rv-pro-trial/-/4bcd0aa81135c89fafcaad023cb07e04ec0da8fb}
 
-  '@revolist/vue3-datagrid@4.29.0':
-    resolution: {integrity: sha512-Sw9WKahEbCTTBBKFznXoxwh08v8nOgaAh8++G+YBxpPTN1B4suhAEcML9w2LGKpGbE6a+oVWBNPrC46nwSAkmw==}
+  '@revolist/vue3-datagrid@4.29.1':
+    resolution: {integrity: sha512-X/5IjQnOW1NSwW34MPNQpzBa4DBtfjbMlVtdG2roA4n3VVrCgiYz8qJwGFsWMptvocml+ywauvkJVa/uMSetuw==}
 
   '@rolldown/binding-android-arm64@1.2.3':
     resolution: {integrity: sha512-zrJtHDcaZJ1Fp7xf4hNl+7seH9Cn/N5TwLYkhgXREtBwAd/jaqW3uqeHxpDugJLVICWg4eW44kOQEGJ1r6jCGw==}
@@ -3079,6 +3079,14 @@ packages:
   postcss@8.5.25:
     resolution: {integrity: sha512-DTPx3RWSSnWyzLxQnlH0rJP+EW5ekl16ZU4/psbIhA0e53kJfdgaN5vKM+xP7yJtXVu+nfdVFmlgFDEKAe4Pyw==}
     engines: {node: ^10 || ^12 || >=14}
+
+  preact@10.29.8:
+    resolution: {integrity: sha512-ej2aVZ+vZ8WO7tvlQWRM9N63A0KzF9q4mWJfDUHgYaIofWY9hu74QdnQrjoPMmZi2/nZ5gN0bJCQF49xQqx09Q==}
+    peerDependencies:
+      preact-render-to-string: '>=5'
+    peerDependenciesMeta:
+      preact-render-to-string:
+        optional: true
 
   proc-log@5.0.0:
     resolution: {integrity: sha512-Azwzvl90HaF0aCz1JrDdXQykFakSSNPaPoiZ9fm5qJIMHioDZEi7OAdRwSm6rSoPtY3Qutnm3L7ogmg3dc+wbQ==}
@@ -4991,13 +4999,13 @@ snapshots:
     dependencies:
       playwright: 1.59.1
 
-  '@revolist/angular-datagrid@4.29.0':
+  '@revolist/angular-datagrid@4.29.1':
     dependencies:
-      '@revolist/revogrid': 4.29.0
+      '@revolist/revogrid': 4.29.1
       '@stencil/core': 4.43.5
       tslib: 2.8.1
 
-  '@revolist/charts-trial@3.0.12':
+  '@revolist/charts-trial@3.0.14':
     dependencies:
       d3-shape: 3.2.0
       fflate: 0.8.3
@@ -5006,36 +5014,41 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@revolist/pivot-trial@3.0.12':
+  '@revolist/pivot-trial@3.0.14':
     dependencies:
       '@fortawesome/fontawesome-free': 7.3.1
-      '@revolist/charts-trial': 3.0.12
-      '@revolist/revogrid': 4.29.0
-      '@revolist/rv-pro-trial': 3.0.12
+      '@revolist/charts-trial': 3.0.14
+      '@revolist/revogrid': 4.29.1
+      '@revolist/rv-pro-trial': 3.0.14
       fflate: 0.8.3
+      preact: 10.29.8
     transitivePeerDependencies:
       - bufferutil
+      - preact-render-to-string
       - utf-8-validate
 
-  '@revolist/react-datagrid@4.29.0':
+  '@revolist/react-datagrid@4.29.1':
     dependencies:
-      '@revolist/revogrid': 4.29.0
+      '@revolist/revogrid': 4.29.1
 
   '@revolist/revogrid-column-numeral@2.0.11':
     dependencies:
       numeral: 2.0.6
 
-  '@revolist/revogrid@4.29.0': {}
+  '@revolist/revogrid@4.29.1': {}
 
-  '@revolist/rv-pro-trial@3.0.12':
+  '@revolist/rv-pro-trial@3.0.14':
     dependencies:
       '@formulajs/formulajs': 4.6.1
-      '@revolist/revogrid': 4.29.0
+      '@revolist/revogrid': 4.29.1
+      preact: 10.29.8
       write-excel-file: 4.1.1
+    transitivePeerDependencies:
+      - preact-render-to-string
 
-  '@revolist/vue3-datagrid@4.29.0':
+  '@revolist/vue3-datagrid@4.29.1':
     dependencies:
-      '@revolist/revogrid': 4.29.0
+      '@revolist/revogrid': 4.29.1
 
   '@rolldown/binding-android-arm64@1.2.3':
     optional: true
@@ -6650,6 +6663,8 @@ snapshots:
       nanoid: 3.3.17
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  preact@10.29.8: {}
 
   proc-log@5.0.0: {}
 
