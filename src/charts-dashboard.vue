@@ -98,6 +98,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import RevoGrid from '@revolist/vue3-datagrid';
 import type { PivotChartRef, PivotChartsPlugin, PivotChartUpdatedEventDetail, PivotConfig } from '@revolist/pivot';
+import { createPivotChartsRenderer } from '@revolist/pivot';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import { loadContosoData, type ContosoSale } from './contoso-data';
 import { createFinancialFieldsDrawer, type FinancialFieldsDrawer } from './financial-fields-drawer';
@@ -123,6 +124,7 @@ const dashboardPlugins = createFinancialShowcasePlugins(false, false);
 const axisNumber = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
 const dashboardCharts = {
   ...FINANCIAL_PIVOT_CHARTS,
+  renderer: createPivotChartsRenderer({ transitions: { duration: 900, easing: 'ease-out' } }),
   localeText: { renderer: { formatNumber: (value: number) => axisNumber.format(value) } },
 };
 
@@ -256,6 +258,13 @@ async function mountCharts() {
     connectGrid();
     if (activeGrid !== grid) throw new Error('Grid element was replaced during chart startup');
     chartDataPlugin = activeCharts;
+    // Set the shared chart height before rendering: a resize settles native entrance motion.
+    const comparisonData = await activeCharts.getChartData({ chartType: 'stackedBar' });
+    if (disposed) return;
+    comparisonHeight.value = comparisonChartHeight(comparisonData.categories.length);
+    await nextTick();
+    connectGrid();
+    if (activeGrid !== grid) throw new Error('Grid element was replaced during chart startup');
     chartStage.value = 'creating quarterly chart';
     charts.push(await activeCharts.createChart({
       container: quarterChartHost.value,
