@@ -13,9 +13,9 @@
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
-    "@revolist/pivot": "npm:@revolist/pivot-trial@3.0.17",
+    "@revolist/pivot": "npm:@revolist/pivot-trial@3.0.18",
     "@revolist/revogrid": "4.29.1",
-    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@3.0.17"
+    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@3.0.18"
   },
   "devDependencies": {
     "typescript": "~6.0.3",
