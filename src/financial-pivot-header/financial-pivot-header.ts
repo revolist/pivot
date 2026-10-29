@@ -1,3 +1,5 @@
+import { controlAttributes, createControl } from '@revolist/ui';
+import '@revolist/ui/styles.css';
 import { FINANCIAL_ANALYSIS_PRESET_IDS, FINANCIAL_PRESETS, type FinancialPresetId } from '../financial.pivot';
 
 export const FINANCIAL_PIVOT_HEADER_TAG = 'financial-pivot-header';
@@ -101,7 +103,7 @@ class FinancialPivotHeader extends HTMLElement {
     const state = this.currentState;
     const root = element('div', 'financial-pivot-header');
     const toolbar = element('div', 'financial-pivot-header__toolbar');
-    const presetSwitch = element('div', 'financial-pivot-header__preset-switch');
+    const presetSwitch = element('div', 'financial-pivot-header__preset-switch rv-segmented-switch');
     presetSwitch.setAttribute('role', 'tablist');
     presetSwitch.setAttribute('aria-label', 'Financial report presets');
     const analysisMode = state.activePreset && FINANCIAL_ANALYSIS_PRESET_IDS.includes(state.activePreset);
@@ -111,10 +113,10 @@ class FinancialPivotHeader extends HTMLElement {
       const button = actionButton(preset.label, () => {
         if (!active) this.emit(FINANCIAL_PIVOT_PRESET_EVENT, preset.id);
       });
-      button.className = `financial-pivot-header__preset-tab${active ? ' is-active' : ''}`;
+      button.className = controlAttributes('button', { class: `financial-pivot-header__preset-tab${active ? ' is-active' : ''}` }).class;
       button.dataset.value = preset.id;
       button.setAttribute('role', 'tab');
-      button.setAttribute('aria-selected', String(active));
+      button.classList.add('rv-segmented-switch-item'); button.setAttribute('aria-selected', String(active)); button.classList.toggle('on', button.getAttribute('aria-selected') === 'true');
       button.tabIndex = active ? 0 : -1;
       presetSwitch.append(button);
     }
@@ -167,7 +169,7 @@ class FinancialPivotHeader extends HTMLElement {
     manageActions.setAttribute('aria-label', 'Manage report');
     const reportMenu = element('details', 'financial-pivot-header__menu');
     reportMenu.open = !!reportMenuWasOpen;
-    const summary = element('summary', 'financial-pivot-header__button', 'Report');
+    const summary = createControl(document, 'summary', { class: 'rv-btn financial-pivot-header__button', children: 'Report' });
     summary.dataset.action = 'report';
     summary.setAttribute('aria-label', 'Report actions');
     reportMenu.append(summary);
@@ -189,7 +191,7 @@ class FinancialPivotHeader extends HTMLElement {
     );
     (menu.lastElementChild as HTMLButtonElement).disabled = !state.savedAvailable;
     const nameLabel = element('label', 'financial-pivot-header__name-label', 'Save a named layout');
-    const nameInput = document.createElement('input');
+    const nameInput = createControl(document, 'input', { type: 'text' });
     nameInput.type = 'text';
     nameInput.placeholder = 'Report name';
     nameInput.maxLength = 80;
@@ -214,7 +216,7 @@ class FinancialPivotHeader extends HTMLElement {
       menuAction('Export XLSX (visible result)', 'Download the current grid values.', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export-xlsx'); }, 'export-xlsx'),
       menuAction('Print / Save PDF (visible result)', 'Open browser printing for the current grid.', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'print'); }, 'print'),
       menuAction('Import report JSON', 'Choose a previously downloaded report file.', () => {
-        const picker = document.createElement('input');
+        const picker = createControl(document, 'input', { type: 'file' });
         picker.type = 'file'; picker.accept = '.json,application/json';
         picker.addEventListener('change', async () => {
           const file = picker.files?.[0];
@@ -269,9 +271,9 @@ export function createFinancialPivotHeader(state: FinancialPivotHeaderState) {
 }
 
 function actionButton(label: string, onClick: () => void, action?: string, pressed?: boolean) {
-  const button = document.createElement('button');
+  const button = createControl(document, 'button', { type: 'button' });
   button.type = 'button';
-  button.className = 'financial-pivot-header__button';
+  button.className = controlAttributes('button', { class: 'financial-pivot-header__button' }).class;
   if (action) button.dataset.action = action;
   if (pressed !== undefined) button.setAttribute('aria-pressed', String(pressed));
   button.append(element('span', '', label));

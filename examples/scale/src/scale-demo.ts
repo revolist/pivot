@@ -1,3 +1,5 @@
+import { applyControlPresentation } from '@revolist/ui';
+import '@revolist/ui/styles.css';
 import { currentTheme, observeCurrentTheme } from '../../../src/shared/theme';
 /** Client workload UI and measurements. Data generation and Pivot configuration are separate so you can replace either without rewriting the view. */
 import { defineCustomElements } from '@revolist/revogrid/loader';
@@ -64,6 +66,7 @@ app.innerHTML = `
       </div>
     </section>
   </section>`;
+applyControlPresentation(app);
 
 const status = app.querySelector<HTMLElement>('#status')!;
 const gridHost = app.querySelector<HTMLElement>('#grid-host')!;
@@ -88,7 +91,7 @@ const workloadTabs = Array.from(app.querySelectorAll<HTMLButtonElement>('.scale-
 function setActiveWorkload(count: number | null) {
   workloadTabs.forEach((tab, index) => {
     const selected = Number(tab.dataset.count) === count;
-    tab.setAttribute('aria-selected', String(selected));
+    tab.classList.add('rv-segmented-switch-item'); tab.setAttribute('aria-selected', String(selected)); tab.classList.toggle('on', tab.getAttribute('aria-selected') === 'true');
     tab.tabIndex = selected || (count === null && index === 0) ? 0 : -1;
   });
 }
@@ -211,7 +214,7 @@ workloadTabs.forEach((button) => {
 app.querySelector<HTMLButtonElement>('[data-action="interaction"]')!.addEventListener('click', () => void switchLayout());
 fieldsButton.addEventListener('click', () => {
   const visible = clientDemo.classList.toggle('fields-visible');
-  fieldsButton.setAttribute('aria-pressed', String(visible));
+  fieldsButton.classList.add('rv-choice-chip'); fieldsButton.setAttribute('aria-pressed', String(visible));
   fieldsButton.textContent = visible ? 'Hide fields' : 'Show fields';
 });
 

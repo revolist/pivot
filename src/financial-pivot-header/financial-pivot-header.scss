@@ -88,10 +88,6 @@ financial-pivot-header {
   width: min(100%, 620px);
 }
 
-.financial-pivot-header__button {
-  @include demo-controls.demo-button;
-}
-
 .financial-pivot-header__question {
   margin: 0;
   padding-inline: 2px;
@@ -100,7 +96,7 @@ financial-pivot-header {
   line-height: 16px;
 }
 .financial-pivot-header__menu { position: relative; }
-.financial-pivot-header__menu summary { cursor: pointer; list-style: none; }
+.financial-pivot-header__menu summary { list-style: none; }
 .financial-pivot-header__menu summary::-webkit-details-marker { display: none; }
 .financial-pivot-header__menu-items {
   // Escape the scrollable report workspace when opening above the toolbar.
@@ -146,14 +142,10 @@ financial-pivot-header {
 .financial-pivot-header__menu-action small { color: var(--rv-ui-text-muted, #64748b); font-size: 10px; line-height: 14px; }
 .financial-pivot-header__menu-action:disabled { opacity: 0.5; cursor: not-allowed; }
 .financial-pivot-header__name-label { display: grid; gap: 4px; font-size: 11px; font-weight: 600; }
-.financial-pivot-header__name-label input { width: 100%; box-sizing: border-box; font-size: 12px; }
+.financial-pivot-header__name-label input { width: 100%; box-sizing: border-box; }
 .financial-pivot-header__saved-row { display: flex; gap: 5px; }
 .financial-pivot-header__saved-row .financial-pivot-header__menu-action { flex: 1; min-width: 0; }
 .financial-pivot-header__saved-row > button:last-child { flex: 0 0 auto; }
-.financial-pivot-header__button[aria-pressed='true'] {
-  border-color: var(--rv-ui-accent, #087e66);
-  color: var(--rv-ui-accent, #087e66);
-}
 .financial-pivot-showcase .pivot-grid-container { min-width: 0 !important; }
 .financial-pivot-showcase .financial-pivot-chart {
   height: 290px;
@@ -207,12 +199,6 @@ financial-pivot-header {
   white-space: nowrap;
   cursor: pointer;
 }
-.financial-pivot-header__preset-tab.is-active {
-  border-bottom-color: currentColor;
-  background: transparent;
-  box-shadow: none;
-  color: inherit;
-}
 .financial-pivot-header__surface {
   display: grid;
   min-width: 0;
@@ -233,29 +219,16 @@ financial-pivot-header {
   padding-right: 4px;
 }
 .financial-pivot-header__action-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.financial-pivot-header__button,
-.financial-pivot-header__menu > summary.financial-pivot-header__button {
-  height: 30px;
-  min-height: 30px;
-  padding: 0 9px;
-  border: 1px solid var(--rv-ui-border, #d8e1e8);
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  box-shadow: none;
-  font-size: 11px;
+// Keep native buttons and the Report disclosure on the same shared presentation.
+.financial-pivot-header__actions .financial-pivot-header__button {
+  box-sizing: border-box;
+  height: 32px;
+  min-height: 32px;
+  font-family: inherit;
 }
 .financial-pivot-header__button--expand {
   width: 32px;
-  height: 32px;
-  min-height: 32px;
   padding: 0;
-  border: 0;
-  font-size: 18px;
-}
-.financial-pivot-header__button--expand:hover:not(:disabled) {
-  border-color: transparent;
-  background: var(--rv-ui-surface, #f6f8fa);
 }
 .financial-pivot-header__view-switch {
   display: inline-flex;
@@ -367,13 +340,6 @@ financial-pivot-header {
   border-bottom: 1px solid var(--rv-ui-border, #d8e1e8);
 }
 .financial-pivot-fields-drawer__header h2 { margin: 0; font-size: 16px; }
-.financial-pivot-fields-drawer__close {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font-size: 24px;
-  cursor: pointer;
-}
 .financial-pivot-fields-drawer__hint {
   margin: 0;
   padding: 10px 18px;

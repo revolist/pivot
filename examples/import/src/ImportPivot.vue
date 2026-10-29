@@ -1,10 +1,10 @@
 <template>
   <main ref="workspace" class="import-pivot" :class="{ 'is-dark': isDark, 'is-exploring': step === 3 }">
     <header v-if="step === 3" class="import-topbar">
-      <div class="import-report-source"><span class="import-file-symbol"><ImportIcon name="file" /></span><div><strong>{{ acceptedName }}</strong><small>{{ acceptedSheet }} <span>·</span> {{ reportRows.length.toLocaleString() }} rows <span>·</span> {{ acceptedFields.length }} fields</small></div></div><div class="import-report-actions"><button type="button" class="import-btn" @click="reviewData">Review data</button><button type="button" class="import-btn" @click="replaceFile">Replace file</button></div>
+      <div class="import-report-source"><span class="import-file-symbol"><ImportIcon name="file" /></span><div><strong>{{ acceptedName }}</strong><small>{{ acceptedSheet }} <span>·</span> {{ reportRows.length.toLocaleString() }} rows <span>·</span> {{ acceptedFields.length }} fields</small></div></div><div class="import-report-actions"><button v-rv-control type="button" class="import-btn" @click="reviewData">Review data</button><button v-rv-control type="button" class="import-btn" @click="replaceFile">Replace file</button></div>
     </header>
-    <input ref="fileInput" class="import-sr-only" tabindex="-1" type="file" accept=".xlsx,.csv" aria-label="Choose Excel or CSV file" @change="onFileInput" />
-    <div v-if="error" class="import-alert" role="alert"><span>{{ error }}</span><button type="button" aria-label="Dismiss error" @click="error = ''"><ImportIcon name="close" /></button></div>
+    <input v-rv-control ref="fileInput" class="import-sr-only" tabindex="-1" type="file" accept=".xlsx,.csv" aria-label="Choose Excel or CSV file" @change="onFileInput" />
+    <div v-if="error" class="import-alert" role="alert"><span>{{ error }}</span><button v-rv-control type="button" aria-label="Dismiss error" @click="error = ''"><ImportIcon name="close" /></button></div>
 
     <section v-if="step === 1" class="import-welcome" aria-labelledby="import-title">
       <div class="import-intro">
@@ -16,58 +16,60 @@
         <div class="import-file-art"><ImportIcon :name="busy ? 'upload' : 'file'" /></div>
         <h2>{{ busy ? 'Reading your spreadsheet…' : 'Drop your file here' }}</h2>
         <p>{{ busy ? 'Finding sheets, headers, and fields.' : 'Browse your device or drag an Excel or CSV file here.' }}</p>
-        <button v-if="!busy" class="import-btn import-primary" type="button" @click="chooseFile"><ImportIcon name="upload" /> Choose a file</button>
-        <button v-else class="import-btn" type="button" @click="cancelImport">Cancel import</button>
+        <button v-rv-control v-if="!busy" class="import-btn import-primary rv-btn-primary" type="button" @click="chooseFile"><ImportIcon name="upload" /> Choose a file</button>
+        <button v-rv-control v-else class="import-btn" type="button" @click="cancelImport">Cancel import</button>
         <span class="import-upload-formats">.xlsx · .csv <span>up to 10 MB</span></span>
       </div>
-      <div class="import-sample-row"><span>Explore with an example</span><button type="button" :disabled="busy" @click="loadSample">Try sample sales data <ImportIcon name="arrow" /></button></div>
+      <div class="import-sample-row"><span>Explore with an example</span><button v-rv-control type="button" :disabled="busy" @click="loadSample">Try sample sales data <ImportIcon name="arrow" /></button></div>
       <p class="import-reassurance"><ImportIcon name="lock" /> Files are processed on your device. Nothing is uploaded.</p>
     </section>
 
     <section v-else-if="step === 2" class="import-review" aria-labelledby="import-review-title">
-      <div class="import-section-heading"><div><span class="import-eyebrow">Review import</span><h1 id="import-review-title">Review your data</h1><p>Check the worksheet, headers, and field types before creating your pivot.</p></div><button class="import-btn" type="button" @click="replaceFile"><ImportIcon name="reset" /> Choose another file</button></div>
+      <div class="import-section-heading"><div><span class="import-eyebrow">Review import</span><h1 id="import-review-title">Review your data</h1><p>Check the worksheet, headers, and field types before creating your pivot.</p></div><button v-rv-control class="import-btn" type="button" @click="replaceFile"><ImportIcon name="reset" /> Choose another file</button></div>
       <div class="import-review-card">
         <div class="import-file-summary"><span class="import-file-symbol"><ImportIcon name="file" /></span><div><strong>{{ workbook?.name }}</strong><small>{{ workbook?.sheets.length }} sheet{{ workbook?.sheets.length === 1 ? '' : 's' }} available · processed locally</small></div><span class="import-detected"><ImportIcon name="check" /> Ready to import</span></div>
         <div class="import-review-controls">
-          <label>Worksheet<select v-model.number="sheetIndex" aria-label="Worksheet"><option v-for="(sheet, i) in workbook?.sheets" :key="sheet.name" :value="i">{{ sheet.name }}</option></select></label>
-          <label>Header row<input v-model.number="headerRow" type="number" min="1" :max="Math.max(1, cells.length - 1)" aria-label="Header row" /></label>
-          <label>Decimal separator<select v-model="decimal" aria-label="Decimal separator"><option value=".">Point (1234.56)</option><option value=",">Comma (1234,56)</option></select></label>
-          <details class="import-range"><summary>Data range</summary><div><label>First data row<input v-model.number="firstRow" type="number" :min="headerRow + 1" :max="cells.length" /></label><label>Last data row<input v-model.number="lastRow" type="number" :min="firstRow" :max="cells.length" /></label></div></details>
+          <label>Worksheet<select v-rv-control v-model.number="sheetIndex" aria-label="Worksheet"><option v-for="(sheet, i) in workbook?.sheets" :key="sheet.name" :value="i">{{ sheet.name }}</option></select></label>
+          <label>Header row<input v-rv-control v-model.number="headerRow" type="number" min="1" :max="Math.max(1, cells.length - 1)" aria-label="Header row" /></label>
+          <label>Decimal separator<select v-rv-control v-model="decimal" aria-label="Decimal separator"><option value=".">Point (1234.56)</option><option value=",">Comma (1234,56)</option></select></label>
+          <details class="import-range"><summary v-rv-control>Data range</summary><div><label>First data row<input v-rv-control v-model.number="firstRow" type="number" :min="headerRow + 1" :max="cells.length" /></label><label>Last data row<input v-rv-control v-model.number="lastRow" type="number" :min="firstRow" :max="cells.length" /></label></div></details>
         </div>
         <div v-if="inspectionError" class="import-inline-warning" role="alert">{{ inspectionError }}</div>
         <template v-else>
           <div class="import-preview-heading"><h2>Data preview <span>{{ table.source.length.toLocaleString() }} rows · {{ fields.length }} fields</span></h2><span>Change a type below if needed</span></div>
-          <div class="import-preview-scroll"><table class="import-preview-table"><thead><tr><th v-for="field in fields" :key="field.key"><span>{{ field.name }}</span><select v-model="field.type" :aria-label="`Type for ${field.name}`"><option value="text">Aa Text</option><option value="number"># Number</option><option value="date">◷ Date (ISO)</option></select></th></tr></thead><tbody><tr v-for="(row, i) in table.source.slice(0, 5)" :key="i"><td v-for="(field, j) in fields" :key="field.key" :title="displayCell(row[j])" :class="{ 'is-number': field.type === 'number' }">{{ displayCell(row[j]) || '—' }}</td></tr></tbody></table></div>
+          <div class="import-preview-scroll"><table class="import-preview-table"><thead><tr><th v-for="field in fields" :key="field.key"><span>{{ field.name }}</span><select v-rv-control v-model="field.type" :aria-label="`Type for ${field.name}`"><option value="text">Aa Text</option><option value="number"># Number</option><option value="date">◷ Date (ISO)</option></select></th></tr></thead><tbody><tr v-for="(row, i) in table.source.slice(0, 5)" :key="i"><td v-for="(field, j) in fields" :key="field.key" :title="displayCell(row[j])" :class="{ 'is-number': field.type === 'number' }">{{ displayCell(row[j]) || '—' }}</td></tr></tbody></table></div>
           <p class="import-preview-caption">Showing {{ Math.min(5, table.source.length) }} preview rows. Your pivot will include all {{ table.source.length.toLocaleString() }} selected rows.</p>
           <div v-if="mixedFields.length" class="import-inline-warning">Mixed values detected in {{ mixedFields.join(', ') }}. Kept as Text so every value is preserved.</div>
           <div v-if="prepared.errors.length" class="import-inline-warning" role="alert"><p v-for="message in prepared.errors" :key="message">{{ message }}</p></div>
         </template>
         <div class="import-review-footer"><span><ImportIcon name="lock" /> Processed on your device</span><span>Excel formulas use saved results. Dates use ISO format.</span></div>
       </div>
-      <div class="import-create-row"><div class="import-suggestion"><span><ImportIcon name="table" /></span><div><small>Suggested report</small><strong>{{ suggestion.label }}</strong><p>You can change every field in the next step.</p></div></div><div class="import-create-actions"><button type="button" class="import-btn" :disabled="!canCreate" @click="createReport(true)">Start empty</button><button type="button" class="import-btn import-primary" :disabled="!canCreate" @click="createReport(false)">Create pivot <ImportIcon name="arrow" /></button></div></div>
+      <div class="import-create-row"><div class="import-suggestion"><span><ImportIcon name="table" /></span><div><small>Suggested report</small><strong>{{ suggestion.label }}</strong><p>You can change every field in the next step.</p></div></div><div class="import-create-actions"><button v-rv-control type="button" class="import-btn" :disabled="!canCreate" @click="createReport(true)">Start empty</button><button v-rv-control type="button" class="import-btn import-primary rv-btn-primary" :disabled="!canCreate" @click="createReport(false)">Create pivot <ImportIcon name="arrow" /></button></div></div>
     </section>
 
     <section v-else class="import-explore" aria-label="Pivot workspace">
       <div class="import-report-body">
         <section class="import-results" aria-label="Report results">
-          <div class="import-report-toolbar"><div class="import-view-tabs" role="tablist" aria-label="Data view"><button v-for="view in views" :key="view.id" type="button" role="tab" :aria-selected="activeView === view.id" @click="changeView(view.id)"><ImportIcon :name="view.icon" />{{ view.label }}</button></div><div><button type="button" class="import-btn import-fields-toggle" :aria-expanded="fieldsOpen" @click="openFields"><ImportIcon name="fields" /> Fields</button><button type="button" class="import-btn" :disabled="activeView === 'source' || !pivot?.values.length" @click="exportCsv"><ImportIcon name="download" /> Export CSV</button></div></div>
-          <div class="import-report-caption"><div><h2>{{ reportTitle }}</h2><p>{{ activeView === 'source' ? 'Original selected records, with your accepted field types.' : 'Arrange fields and choose aggregations in the field builder.' }}</p></div><button type="button" class="import-reset" @click="resetReport">Reset layout</button></div>
+          <div class="import-report-toolbar"><div class="import-view-tabs" role="tablist" aria-label="Data view"><button v-rv-control v-for="view in views" :key="view.id" type="button" role="tab" :aria-selected="activeView === view.id" :class="{ 'rv-btn-primary': activeView === view.id }" @click="changeView(view.id)"><ImportIcon :name="view.icon" />{{ view.label }}</button></div><div><button v-rv-control type="button" class="import-btn import-fields-toggle" :aria-expanded="fieldsOpen" @click="openFields"><ImportIcon name="fields" /> Fields</button><button v-rv-control type="button" class="import-btn" :disabled="activeView === 'source' || !pivot?.values.length" @click="exportCsv"><ImportIcon name="download" /> Export CSV</button></div></div>
+          <div class="import-report-caption"><div><h2>{{ reportTitle }}</h2><p>{{ activeView === 'source' ? 'Original selected records, with your accepted field types.' : 'Arrange fields and choose aggregations in the field builder.' }}</p></div><button v-rv-control type="button" class="import-reset" @click="resetReport">Reset layout</button></div>
           <div v-show="activeView === 'pivot'" class="import-pivot-stage">
-            <div v-if="!pivot?.values.length" class="import-empty-report"><span><ImportIcon name="table" /></span><h3>Build your first report</h3><p>Add a field to Values in the field builder to create your report.</p><button class="import-btn" type="button" @click="openFields">Open field builder →</button></div>
+            <div v-if="!pivot?.values.length" class="import-empty-report"><span><ImportIcon name="table" /></span><h3>Build your first report</h3><p>Add a field to Values in the field builder to create your report.</p><button v-rv-control class="import-btn" type="button" @click="openFields">Open field builder →</button></div>
             <RevoGrid v-if="pivot" :key="reportVersion" class="import-result-grid cell-border" hide-attribution readonly resize :source="reportRows" :columns="reportColumns" :plugins="plugins" :pivot.prop="pivot" :pivot-charts.prop="chartConfig" :theme="isDark ? 'darkCompact' : 'compact'" :row-size="38" :col-size="165" stretch @aftergridinit="onGridReady" @pivot-config-update="onConfigUpdate" />
           </div>
           <RevoGrid v-if="activeView === 'source'" class="import-source-grid cell-border" hide-attribution readonly resize :source="reportRows" :columns="sourceColumns" :theme="isDark ? 'darkCompact' : 'compact'" :row-size="38" />
           <div v-show="activeView === 'chart'" ref="chartHost" class="import-chart" aria-label="Pivot chart" />
           <div class="import-report-status"><span><i></i> All {{ reportRows.length.toLocaleString() }} selected rows included</span><span>Browser only · no data saved</span></div>
         </section>
-        <button v-if="fieldsOpen" type="button" class="import-fields-backdrop" aria-label="Close field builder" @click="closeFields" />
-        <aside ref="fieldsAside" class="import-fields" :class="{ 'is-open': fieldsOpen }" aria-label="Build your pivot" :role="fieldsOpen ? 'dialog' : undefined" :aria-modal="fieldsOpen ? true : undefined" @keydown="onFieldsKeydown"><div class="import-fields-heading"><div><h2>Build your pivot</h2></div><button class="import-fields-close" type="button" aria-label="Close field builder" @click="closeFields"><ImportIcon name="close" /></button></div><p class="import-fields-hint">Drag a field, or use its menu to choose an area.</p><div ref="configuratorHost" class="import-configurator" /></aside>
+        <button v-rv-control v-if="fieldsOpen" type="button" class="import-fields-backdrop" aria-label="Close field builder" @click="closeFields" />
+        <aside ref="fieldsAside" class="import-fields" :class="{ 'is-open': fieldsOpen }" aria-label="Build your pivot" :role="fieldsOpen ? 'dialog' : undefined" :aria-modal="fieldsOpen ? true : undefined" @keydown="onFieldsKeydown"><div class="import-fields-heading"><div><h2>Build your pivot</h2></div><button v-rv-control class="import-fields-close rv-btn-icon" type="button" aria-label="Close field builder" @click="closeFields"><ImportIcon name="close" /></button></div><p class="import-fields-hint">Drag a field, or use its menu to choose an area.</p><div ref="configuratorHost" class="import-configurator" /></aside>
       </div>
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
+import { vRvControl } from '@revolist/ui/vue-control';
+import '@revolist/ui/styles.css';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import RevoGrid from '@revolist/vue3-datagrid';
 import ImportIcon from './ImportIcon.vue';

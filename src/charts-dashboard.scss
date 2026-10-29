@@ -40,20 +40,6 @@
 .dashboard-compare-label { color: var(--dash-muted); font-size: 12px; font-weight: 600; }
 .dashboard-compare-options { display: flex; align-items: center; box-sizing: border-box; height: 40px; gap: 12px; padding: 4px 10px; border: 1px solid #cccccc; border-radius: 7px; }
 .dashboard-compare-options label { white-space: nowrap; }
-.dashboard-controls select, .dashboard-controls button {
-  box-sizing: border-box;
-  height: 40px;
-  padding: 5px 10px;
-  border: 1px solid #cccccc;
-  border-radius: 7px;
-  background: var(--dash-card);
-  color: var(--dash-ink);
-  font: inherit;
-  cursor: pointer;
-}
-.dashboard-controls input { accent-color: var(--rv-ui-accent, #087e66); }
-.dashboard-controls button:hover { background: var(--rv-ui-surface-hover, #f1f1f1); }
-.dashboard-controls :focus-visible { outline: 2px solid var(--rv-ui-accent, #087e66); outline-offset: 2px; }
 
 .dashboard-summary { display: flex; align-items: center; box-sizing: border-box; min-height: 40px; color: var(--dash-muted); }
 .dashboard-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-height: 600px; padding-bottom: 12px; }
@@ -84,6 +70,4 @@
 }
 .pivot-dashboard.is-dark { --dash-ink: #e8e8e8; --dash-muted: #b5b5b5; --dash-border: #404040; --dash-card: #242424; --dash-accent-text: color-mix(in srgb, var(--rv-ui-accent, #087e66) 62%, white); }
 .is-dark .dashboard-card-kicker { color: var(--dash-accent-text); }
-.is-dark .dashboard-controls select, .is-dark .dashboard-controls button { border-color: #555555; }
 .is-dark .dashboard-compare-options { border-color: #555555; }
-.is-dark .dashboard-controls button:hover { background: var(--rv-ui-surface-hover, #303030); }

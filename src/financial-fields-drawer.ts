@@ -1,10 +1,12 @@
+import { controlAttributes, createControl } from '@revolist/ui';
+import '@revolist/ui/styles.css';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 
 /** Application-owned overlay for the Pivot configurator's public `mountTo` target. */
 export function createFinancialFieldsDrawer(onClose: () => void) {
-  const backdrop = document.createElement('button');
+  const backdrop = createControl(document, 'button', { type: 'button', unstyled: true });
   backdrop.type = 'button';
-  backdrop.className = 'financial-pivot-fields-backdrop';
+  backdrop.className = controlAttributes('button', { unstyled: true, class: 'financial-pivot-fields-backdrop' }).class;
   backdrop.setAttribute('aria-label', 'Close pivot fields');
   backdrop.hidden = true;
 
@@ -20,9 +22,9 @@ export function createFinancialFieldsDrawer(onClose: () => void) {
   heading.className = 'financial-pivot-fields-drawer__header';
   const title = document.createElement('h2');
   title.textContent = 'Pivot fields';
-  const closeButton = document.createElement('button');
+  const closeButton = createControl(document, 'button', { type: 'button' });
   closeButton.type = 'button';
-  closeButton.className = 'financial-pivot-fields-drawer__close';
+  closeButton.className = controlAttributes('button', { class: 'financial-pivot-fields-drawer__close' }).class;
   closeButton.setAttribute('aria-label', 'Close fields');
   closeButton.textContent = '×';
   heading.append(title, closeButton);

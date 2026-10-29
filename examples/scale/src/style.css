@@ -9,14 +9,8 @@
 .scale-demo .eyebrow { color: #127453; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: .75rem; }
 .scale-demo .scale-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 16px; margin: 12px 0 16px; border-bottom: 1px solid var(--scale-border); }
 .scale-demo .scale-workloads, .scale-demo .scale-actions { display: flex; flex-wrap: wrap; align-items: center; }
-.scale-demo .scale-workloads button { height: 42px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; padding: 0 12px; font-size: 14px; white-space: nowrap; }
-.scale-demo .scale-workloads button[aria-selected="true"] { border-bottom-color: currentColor; font-weight: 600; }
+.scale-demo .scale-workloads button { white-space: nowrap; }
 .scale-demo .scale-actions { gap: 8px; margin: 0 0 6px auto; }
-.scale-demo .scale-actions button { padding: 6px 10px; font-size: 12px; }
-.scale-demo .scale-actions > button { border: 1px solid var(--scale-border); border-radius: 7px; background: var(--scale-surface); color: var(--scale-text); font: inherit; cursor: pointer; }
-.scale-demo .scale-actions > button:hover { border-color: #127453; }
-.scale-demo .scale-actions > button:focus-visible { outline: 3px solid #3da77c; outline-offset: 2px; }
-.scale-demo .scale-controls button:disabled { opacity: .6; cursor: wait; }
 .scale-demo .scale-status { margin: 0 0 12px; color: var(--showcase-text-3, var(--scale-muted)); font-size: 12px; white-space: nowrap; }
 .scale-demo .scale-performance { display: grid; flex: 0 0 auto; grid-template-columns: minmax(150px, 1.25fr) repeat(5, minmax(112px, 1fr)); margin-top: 12px; overflow: visible; border: 1px solid var(--showcase-border, #e2e8f0); border-radius: 10px; background: var(--showcase-surface, #fff); color: var(--showcase-text-1, #171717); }
 .scale-demo .scale-performance-heading, .scale-demo .scale-performance-metric { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: 3px; padding: 10px 12px; }
@@ -25,9 +19,8 @@
 .scale-demo .scale-performance-context { overflow: hidden; text-overflow: ellipsis; }
 .scale-demo .scale-performance-label { display: flex; min-width: 0; align-items: center; gap: 5px; }
 .scale-demo .scale-metric-help { position: relative; display: inline-flex; flex: 0 0 auto; overflow: visible; }
-.scale-demo .scale-metric-help-trigger { display: inline-flex; width: 16px; height: 16px; align-items: center; justify-content: center; padding: 0; border: 1px solid currentColor; border-radius: 50%; background: transparent; color: var(--showcase-text-3, var(--scale-muted)); cursor: help; font: 700 10px/1 system-ui, sans-serif; }
-.scale-demo .scale-actions .scale-metric-help-trigger { width: 16px; height: 16px; padding: 0; border-radius: 50%; font: 700 10px/1 system-ui, sans-serif; }
-.scale-demo .scale-metric-help-trigger:hover, .scale-demo .scale-metric-help-trigger:focus-visible { border-color: #127453; color: #127453; outline: none; }
+.scale-demo .scale-metric-help-trigger { display: inline-flex; width: 16px; align-items: center; justify-content: center; }
+.scale-demo .scale-actions .scale-metric-help-trigger { width: 16px; }
 .scale-demo .scale-metric-tooltip { position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 20; width: min(280px, calc(100vw - 32px)); padding: 9px 11px; border: 1px solid var(--showcase-border-strong, #cbd5e1); border-radius: 8px; visibility: hidden; background: var(--showcase-surface-2, #171717); box-shadow: 0 10px 28px rgba(15, 23, 42, 0.2); color: var(--showcase-text-inverse, #fff); font-size: 12px; font-weight: 450; line-height: 1.45; opacity: 0; text-align: left; white-space: normal; transition: opacity 120ms ease, visibility 120ms ease; }
 .scale-demo .scale-performance-metric:nth-child(n + 5) .scale-metric-tooltip { right: 0; left: auto; }
 .scale-demo .scale-metric-help:hover .scale-metric-tooltip, .scale-demo .scale-metric-help:focus-within .scale-metric-tooltip { visibility: visible; opacity: 1; }
@@ -40,7 +33,6 @@
 .scale-demo .pivot-config .panels-container { max-height: none; }
 .scale-demo .scale-grid { display: block; width: 100%; height: 100%; --revo-grid-header-padding: 0 12px; --revo-grid-cell-padding: 0 12px; }
 .scale-demo .scale-grid revogr-header .rgHeaderCell > .header-content { padding-inline: 12px; }
-.scale-client-demo .scale-workloads button { color: var(--vp-c-text-1, var(--scale-text)); cursor: pointer; }
 .scale-client-demo .scale-status { color: var(--vp-c-text-2, var(--scale-muted)); }
 .scale-client-demo .scale-swipe-hint { display: none; }
 .scale-client-demo .scale-actions [data-action="fields"] { display: none; }
@@ -49,7 +41,6 @@
   .scale-demo .pivot-config { --pv-cfg-width: 280px; }
   .scale-client-demo .scale-controls { align-items: center; }
   .scale-client-demo .scale-workloads { width: 100%; justify-content: space-between; }
-  .scale-client-demo .scale-workloads button { padding-inline: 8px; }
   .scale-client-demo .scale-status { flex: 1 1 100%; margin-bottom: 0; }
   .scale-client-demo .scale-actions { margin-bottom: 8px; }
   .scale-client-demo .scale-actions [data-action="fields"] { display: inline-flex; }

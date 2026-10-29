@@ -11,7 +11,7 @@
 
     <div class="dashboard-controls" aria-label="Dashboard controls">
       <label>Year
-        <select :value="yearControl.value" aria-label="Year" @change="updateFilter('Year', $event)">
+        <select v-rv-control :value="yearControl.value" aria-label="Year" @change="updateFilter('Year', $event)">
           <option value="">All years</option>
           <option v-if="yearControl.value === '__custom__'" value="__custom__" disabled>{{ yearControl.label }}</option>
           <option :value="2025">2025</option>
@@ -19,7 +19,7 @@
         </select>
       </label>
       <label>Brand
-        <select :value="brandControl.value" aria-label="Brand" @change="updateFilter('Brand', $event)">
+        <select v-rv-control :value="brandControl.value" aria-label="Brand" @change="updateFilter('Brand', $event)">
           <option v-if="brandControl.value === '__custom__'" value="__custom__" disabled>{{ brandControl.label }}</option>
           <option value="">All brands</option>
           <option v-for="name in brands" :key="name" :value="name">{{ name }}</option>
@@ -28,12 +28,12 @@
       <div class="dashboard-compare" role="radiogroup" aria-labelledby="dashboard-compare-label">
         <span id="dashboard-compare-label" class="dashboard-compare-label">Compare</span>
         <div class="dashboard-compare-options">
-          <label><input :checked="rowField === 'Country'" type="radio" name="dashboard-rows" value="Country" @change="updateRows('Country')" /> Countries</label>
-          <label><input :checked="rowField === 'Category'" type="radio" name="dashboard-rows" value="Category" @change="updateRows('Category')" /> Categories</label>
+          <label><input v-rv-control :checked="rowField === 'Country'" type="radio" name="dashboard-rows" value="Country" @change="updateRows('Country')" /> Countries</label>
+          <label><input v-rv-control :checked="rowField === 'Category'" type="radio" name="dashboard-rows" value="Category" @change="updateRows('Category')" /> Categories</label>
         </div>
       </div>
-      <button type="button" @click="reset">Reset report</button>
-      <button type="button" aria-haspopup="dialog" :aria-expanded="fieldsVisible" @click="toggleFields">Fields</button>
+      <button v-rv-control type="button" @click="reset">Reset report</button>
+      <button v-rv-control type="button" aria-haspopup="dialog" :aria-expanded="fieldsVisible" @click="toggleFields">Fields</button>
       <div class="dashboard-summary" aria-live="polite">
         <span>{{ filteredRows.length.toLocaleString() }} filtered lines · {{ yearControl.label }} · {{ brandControl.label }}</span>
       </div>
@@ -95,6 +95,8 @@
 </template>
 
 <script setup lang="ts">
+import { vRvControl } from '@revolist/ui/vue-control';
+import '@revolist/ui/styles.css';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import RevoGrid from '@revolist/vue3-datagrid';
 import type { PivotChartRef, PivotChartsPlugin, PivotChartUpdatedEventDetail, PivotConfig } from '@revolist/pivot';
