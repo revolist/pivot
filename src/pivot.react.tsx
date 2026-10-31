@@ -20,7 +20,7 @@ import {
   persistPivotState,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, exportFinancialXlsx, financialActionError, mountFinancialChart, printFinancialPivot } from './financial.actions';
+import { exportFinancialCsv, exportFinancialXlsx, financialActionError, financialChartSettingsUi, setInlineChartSettingsVisible, usesChartSettingsDrawer, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import { createFinancialFieldsDrawer, type FinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMNS,
@@ -76,11 +76,11 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
   const [configuratorVisible, setConfiguratorVisible] = useState(false);
   const [configuratorMount, setConfiguratorMount] = useState<HTMLElement>();
   const [chartSettingsMount, setChartSettingsMount] = useState<HTMLElement>();
-  const chartUi = useMemo(() => ({ ...FINANCIAL_PIVOT_CHARTS_UI, settingsMountTo: chartSettingsMount }), [chartSettingsMount]);
   const fieldsDrawer = useRef<FinancialFieldsDrawer>();
   const [expanded, setExpanded] = useState(false);
   const [chartVisible, setChartVisible] = useState(false);
   const [chartFieldsVisible, setChartFieldsVisible] = useState(false);
+  const chartUi = useMemo(() => financialChartSettingsUi(FINANCIAL_PIVOT_CHARTS_UI, chartSettingsMount, chartFieldsVisible), [chartSettingsMount, chartFieldsVisible]);
   const [savedAvailable, setSavedAvailable] = useState(hasSavedPivotReport);
   const [reportsRevision, setReportsRevision] = useState(0);
   const [actionError, setActionError] = useState('');
@@ -203,6 +203,11 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
     };
     const onConfigurator = () => {
       if (chartVisible && gridRef.current) {
+        if (!usesChartSettingsDrawer()) {
+          setInlineChartSettingsVisible(gridRef.current, !chartFieldsVisible);
+          setChartFieldsVisible(!chartFieldsVisible);
+          return;
+        }
         if (chartFieldsVisible) fieldsDrawer.current?.hide();
         else {
           setChartFieldsVisible(true);

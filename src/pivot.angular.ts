@@ -26,7 +26,7 @@ import {
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, exportFinancialXlsx, financialActionError, mountFinancialChart, printFinancialPivot } from './financial.actions';
+import { exportFinancialCsv, exportFinancialXlsx, financialActionError, financialChartSettingsUi, setInlineChartSettingsVisible, usesChartSettingsDrawer, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import { createFinancialFieldsDrawer, type FinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMNS,
@@ -159,7 +159,7 @@ export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDest
   readonly multiRowHeader = FINANCIAL_MULTI_ROW_HEADER;
   readonly pivotCharts = FINANCIAL_PIVOT_CHARTS;
   readonly chartSettingsMount = signal<HTMLElement | undefined>(undefined);
-  readonly pivotChartsUi = computed(() => ({ ...FINANCIAL_PIVOT_CHARTS_UI, settingsMountTo: this.chartSettingsMount() }));
+  readonly pivotChartsUi = computed(() => financialChartSettingsUi(FINANCIAL_PIVOT_CHARTS_UI, this.chartSettingsMount(), this.chartFieldsVisible()));
   readonly plugins = FINANCIAL_SHOWCASE_PLUGINS;
   readonly isDark = signal(currentTheme().isDark());
   readonly theme = computed(() => this.isDark() ? 'darkCompact' : 'compact');
@@ -216,6 +216,11 @@ export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDest
 
   toggleFields() {
     if (this.chartVisible() && this.gridElement) {
+      if (!usesChartSettingsDrawer()) {
+        this.chartFieldsVisible.set(!this.chartFieldsVisible());
+        setInlineChartSettingsVisible(this.gridElement.nativeElement, this.chartFieldsVisible());
+        return;
+      }
       if (this.chartFieldsVisible()) this.fieldsDrawer?.hide();
       else {
         this.chartFieldsVisible.set(true);

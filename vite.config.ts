@@ -4,9 +4,13 @@ import angular from '@analogjs/vite-plugin-angular';
 import react from '@vitejs/plugin-react';
 import vue from '@vitejs/plugin-vue';
 import { trialFilterIdentityPlugin } from './scripts/trial-filter-identity.mjs';
+import { resolvePivotVersion } from './scripts/pivot-version.mjs';
 
 export default defineConfig(({ mode }) => ({
   base: './',
+  define: mode === 'test' ? {} : {
+    'import.meta.env.REVOGRID_PIVOT_VERSION': JSON.stringify(resolvePivotVersion(import.meta.url)),
+  },
   optimizeDeps: { exclude: ['@revolist/revogrid-pro', '@revolist/pivot'] },
   build: {
     rollupOptions: {

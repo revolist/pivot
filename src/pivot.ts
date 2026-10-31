@@ -13,7 +13,7 @@ import {
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, exportFinancialXlsx, financialActionError, mountFinancialChart, printFinancialPivot } from './financial.actions';
+import { exportFinancialCsv, exportFinancialXlsx, financialActionError, financialChartSettingsUi, setInlineChartSettingsVisible, usesChartSettingsDrawer, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import { createFinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMNS,
@@ -91,6 +91,7 @@ export function load(
     const pivotWasVisible = configuratorVisible;
     configuratorVisible = false;
     chartFieldsVisible = false;
+    if (chart && !usesChartSettingsDrawer()) setInlineChartSettingsVisible(grid, false);
     if (pivotWasVisible) applyPivotOptions();
     refreshLayout();
   });
@@ -143,7 +144,7 @@ export function load(
       plugins: FINANCIAL_SHOWCASE_PLUGINS,
       pivotSummaryPanel: { mountTo: summaryMount },
       pivotCharts: FINANCIAL_PIVOT_CHARTS,
-      pivotChartsUi: FINANCIAL_PIVOT_CHARTS_UI,
+      pivotChartsUi: financialChartSettingsUi(FINANCIAL_PIVOT_CHARTS_UI, fieldsDrawer.chartMountTo),
       pivot: applyFinancialPivotOptions(
         pivotConfig,
         data,
@@ -171,6 +172,12 @@ export function load(
   });
   header.addEventListener(FINANCIAL_PIVOT_CONFIGURATOR_EVENT, () => {
     if (chartVisible) {
+      if (!usesChartSettingsDrawer()) {
+        chartFieldsVisible = !chartFieldsVisible;
+        setInlineChartSettingsVisible(grid, chartFieldsVisible);
+        refreshLayout();
+        return;
+      }
       if (chartFieldsVisible) fieldsDrawer.hide();
       else {
         chartFieldsVisible = true;

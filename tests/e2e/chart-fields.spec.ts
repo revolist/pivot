@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { resolvePivotVersion } from '../../scripts/pivot-version.mjs';
+
+const drawerSupported = Number.parseInt(resolvePivotVersion(import.meta.url), 10) >= 4;
 
 test('Fields toggles the chart inspector inside the Fields drawer', async ({ page }) => {
+  test.skip(!drawerSupported, 'External settings mounting requires Pivot 4+.');
   await page.goto('/');
   const header = page.locator('financial-pivot-header');
   await expect(header).toBeVisible({ timeout: 30000 });
@@ -55,4 +59,34 @@ test('Fields toggles the chart inspector inside the Fields drawer', async ({ pag
   const pivotSwitchStyle = await pivotDrawer.getByRole('tab', { name: 'Layout', exact: true }).evaluate(switchStyle);
   expect(chartSwitchStyle).toEqual(pivotSwitchStyle);
   expect(chartInactiveStyle).toEqual(await pivotDrawer.getByRole('tab', { name: 'Display', exact: true }).evaluate(switchStyle));
+});
+
+test('Config toggles inline chart settings on Pivot 3 without opening an empty drawer', async ({ page }) => {
+  test.skip(drawerSupported, 'Pivot 4+ mounts settings in the drawer.');
+  await page.goto('/');
+  const header = page.locator('financial-pivot-header');
+  await expect(header).toBeVisible({ timeout: 30000 });
+  await header.getByRole('button', { name: 'Chart', exact: true }).click();
+  await expect(page.locator('[data-pivot-chart-container]').first()).toBeVisible();
+  const config = header.getByRole('button', { name: 'Config', exact: true });
+  await config.click();
+  const settings = page.locator('.financial-pivot-chart .rv-pivot-chart-dialog__settings');
+  await expect(settings).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Chart settings', exact: true })).toBeHidden();
+  await settings.getByRole('tab', { name: /^(Customize|Display)$/ }).click();
+  const title = settings.getByLabel('Title', { exact: true });
+  await title.fill('Inline chart settings');
+  await config.click();
+  await expect(settings).toBeHidden();
+  await config.click();
+  await expect(settings).toBeVisible();
+  await settings.getByRole('tab', { name: /^(Customize|Display)$/ }).click();
+  await expect(settings.getByLabel('Title', { exact: true })).toHaveValue('Inline chart settings');
+  await header.getByRole('button', { name: 'Pivot', exact: true }).click();
+  await config.click();
+  await page.getByRole('button', { name: 'Close fields', exact: true }).click();
+  await header.getByRole('button', { name: 'Chart', exact: true }).click();
+  await expect(settings).toBeHidden();
+  await config.click();
+  await expect(settings).toBeVisible();
 });

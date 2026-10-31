@@ -63,7 +63,7 @@ import {
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, exportFinancialXlsx, financialActionError, mountFinancialChart, printFinancialPivot } from './financial.actions';
+import { exportFinancialCsv, exportFinancialXlsx, financialActionError, financialChartSettingsUi, setInlineChartSettingsVisible, usesChartSettingsDrawer, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import { createFinancialFieldsDrawer, type FinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMNS,
@@ -97,7 +97,7 @@ const actionError = ref('');
 let fieldsDrawer: FinancialFieldsDrawer | undefined;
 const configuratorMount = shallowRef<HTMLElement>();
 const chartSettingsMount = shallowRef<HTMLElement>();
-const chartUi = computed(() => ({ ...FINANCIAL_PIVOT_CHARTS_UI, settingsMountTo: chartSettingsMount.value }));
+const chartUi = computed(() => financialChartSettingsUi(FINANCIAL_PIVOT_CHARTS_UI, chartSettingsMount.value, chartFieldsVisible.value));
 
 onMounted(() => {
   fieldsDrawer = createFinancialFieldsDrawer(() => {
@@ -194,6 +194,11 @@ const pivot = computed(() =>
 
 const toggleFields = () => {
   if (chartVisible.value && gridElement.value) {
+    if (!usesChartSettingsDrawer()) {
+      chartFieldsVisible.value = !chartFieldsVisible.value;
+      setInlineChartSettingsVisible(gridElement.value, chartFieldsVisible.value);
+      return;
+    }
     if (chartFieldsVisible.value) fieldsDrawer?.hide();
     else {
       chartFieldsVisible.value = true;

@@ -1,5 +1,28 @@
-import { PivotPlugin, mountPivotChart, type PivotChartRef } from '@revolist/pivot';
+/// <reference types="vite/client" />
+import { PivotPlugin, mountPivotChart, type PivotChartRef, type PivotChartsUiConfig } from '@revolist/pivot';
 export { buildPivotPrintTable } from '@revolist/pivot';
+
+/** settingsMountTo is supported from Pivot 4; unknown hosts safely keep settings inline. */
+export function usesChartSettingsDrawer(version = import.meta.env.REVOGRID_PIVOT_VERSION): boolean {
+  return Number.parseInt(version ?? '', 10) >= 4;
+}
+
+export function financialChartSettingsUi(
+  ui: PivotChartsUiConfig | undefined,
+  mountTo?: HTMLElement,
+  visible = false,
+): PivotChartsUiConfig {
+  const drawer = usesChartSettingsDrawer();
+  return {
+    ...ui,
+    controls: { ...ui?.controls, settings: drawer || visible ? 'enabled' : 'hidden' },
+    ...(drawer ? { settingsMountTo: mountTo } : {}),
+  };
+}
+
+export function setInlineChartSettingsVisible(grid: HTMLRevoGridElement, visible: boolean): void {
+  grid.pivotChartsUi = financialChartSettingsUi(grid.pivotChartsUi, undefined, visible);
+}
 
 /** Find the active public export owner for this grid. */
 async function getPivotPlugin(grid: HTMLRevoGridElement) {
@@ -23,7 +46,7 @@ export async function mountFinancialChart(
   title = 'Pivot Table Demo',
   settingsMountTo?: HTMLElement,
 ): Promise<PivotChartRef> {
-  grid.pivotChartsUi = { ...grid.pivotChartsUi, settingsMountTo };
+  grid.pivotChartsUi = financialChartSettingsUi(grid.pivotChartsUi, settingsMountTo);
   return mountPivotChart(grid, {
     container,
     controls: 'standard',

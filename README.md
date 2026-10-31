@@ -46,6 +46,15 @@ pnpm config delete @revolist:registry --location=project
 pnpm add @revolist/revogrid@4.29.0 @revolist/revogrid-pro@3.0.18 @revolist/pivot@3.0.18
 ```
 
+## Chart settings compatibility
+
+The showcase's Config action toggles inline chart settings with Pivot 3.x,
+including 3.1.2. Pivot 4+ mounts those settings in the shared Fields drawer.
+The Vite config reads the resolved Pivot package version (including trial aliases)
+and defines `import.meta.env.REVOGRID_PIVOT_VERSION`. Other Vite hosts should
+provide that value for their resolved package; without it settings stay inline.
+The Pivot field configurator keeps its drawer in either version.
+
 ## Quick start
 
 ```ts
