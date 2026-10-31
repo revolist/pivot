@@ -11,12 +11,19 @@ async function getPivotPlugin(grid: HTMLRevoGridElement) {
 /** Explain chart safety limits without dropping data or leaving an empty chart view. */
 export function financialActionError(error: unknown): string {
   if (error && typeof error === 'object' && 'code' in error && error.code === 'LIMIT_EXCEEDED') {
-    return 'This report is too detailed to chart. Use Fields to filter the data or choose a grouped report, then open Chart again.';
+    return 'This report is too detailed to chart. Use Config to filter the data or choose a grouped report, then open Chart again.';
   }
   return 'Could not complete this report action. Please try again.';
 }
 
-export async function mountFinancialChart(grid: HTMLRevoGridElement, container: HTMLElement, title = 'Pivot Table Demo'): Promise<PivotChartRef> {
+/** Mount chart settings in the same application-owned Fields drawer as Pivot. */
+export async function mountFinancialChart(
+  grid: HTMLRevoGridElement,
+  container: HTMLElement,
+  title = 'Pivot Table Demo',
+  settingsMountTo?: HTMLElement,
+): Promise<PivotChartRef> {
+  grid.pivotChartsUi = { ...grid.pivotChartsUi, settingsMountTo };
   return mountPivotChart(grid, {
     container,
     controls: 'standard',

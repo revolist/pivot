@@ -94,7 +94,7 @@ defineFinancialPivotHeaderElement();
             [pivot]="pivot()"
             [pivotSummaryPanel]="{ mountTo: summaryMount }"
             [pivotCharts]="pivotCharts"
-            [pivotChartsUi]="pivotChartsUi"
+            [pivotChartsUi]="pivotChartsUi()"
             [theme]="theme()"
             [plugins]="plugins"
             [columnTypes]="columnTypes"
@@ -158,7 +158,8 @@ export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDest
   readonly columnTypes = FINANCIAL_COLUMN_TYPES;
   readonly multiRowHeader = FINANCIAL_MULTI_ROW_HEADER;
   readonly pivotCharts = FINANCIAL_PIVOT_CHARTS;
-  readonly pivotChartsUi = FINANCIAL_PIVOT_CHARTS_UI;
+  readonly chartSettingsMount = signal<HTMLElement | undefined>(undefined);
+  readonly pivotChartsUi = computed(() => ({ ...FINANCIAL_PIVOT_CHARTS_UI, settingsMountTo: this.chartSettingsMount() }));
   readonly plugins = FINANCIAL_SHOWCASE_PLUGINS;
   readonly isDark = signal(currentTheme().isDark());
   readonly theme = computed(() => this.isDark() ? 'darkCompact' : 'compact');
@@ -172,6 +173,7 @@ export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDest
   readonly expanded = signal(false);
 
   readonly chartVisible = signal(false);
+  readonly chartFieldsVisible = signal(false);
   readonly savedAvailable = signal(hasSavedPivotReport());
   readonly reportsRevision = signal(0);
   private chart?: PivotChartRef;
@@ -182,7 +184,7 @@ export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDest
     this.reportsRevision();
     return {
       activePreset: this.activePreset(),
-      configuratorVisible: this.configuratorVisible(),
+      configuratorVisible: this.chartVisible() ? this.chartFieldsVisible() : this.configuratorVisible(),
       expanded: this.expanded(),
       chartVisible: this.chartVisible(),
       savedAvailable: this.savedAvailable(),
@@ -199,8 +201,12 @@ export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDest
   ));
 
   ngAfterViewInit(): void {
-    this.fieldsDrawer = createFinancialFieldsDrawer(() => this.configuratorVisible.set(false));
+    this.fieldsDrawer = createFinancialFieldsDrawer(() => {
+      this.configuratorVisible.set(false);
+      this.chartFieldsVisible.set(false);
+    });
     this.configuratorMount.set(this.fieldsDrawer.mountTo);
+    this.chartSettingsMount.set(this.fieldsDrawer.chartMountTo);
     if (this.gridHost) {
       this.gridResizeObserver = new ResizeObserver(() => this.fitColumns());
       this.gridResizeObserver.observe(this.gridHost.nativeElement);
@@ -209,6 +215,14 @@ export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDest
   }
 
   toggleFields() {
+    if (this.chartVisible() && this.gridElement) {
+      if (this.chartFieldsVisible()) this.fieldsDrawer?.hide();
+      else {
+        this.chartFieldsVisible.set(true);
+        this.fieldsDrawer?.show(document.activeElement as HTMLElement, 'chart');
+      }
+      return;
+    }
     if (this.configuratorVisible()) this.fieldsDrawer?.hide();
     else {
       this.fieldsDrawer?.show(document.activeElement as HTMLElement);
@@ -250,9 +264,10 @@ export class PivotShowcaseGridComponent implements OnInit, AfterViewInit, OnDest
       if (action === 'export-xlsx' && this.gridElement) await exportFinancialXlsx(this.gridElement.nativeElement);
       if (action === 'print' && this.gridElement) await printFinancialPivot(this.gridElement.nativeElement);
       if (action === 'chart') {
+        this.fieldsDrawer?.hide();
         this.chartVisible.set(!this.chartVisible());
         if (this.chartVisible() && !this.chart && this.gridElement && this.chartContainer) {
-          this.chart = await mountFinancialChart(this.gridElement.nativeElement, this.chartContainer.nativeElement, this.chartTitle);
+          this.chart = await mountFinancialChart(this.gridElement.nativeElement, this.chartContainer.nativeElement, this.chartTitle, this.fieldsDrawer?.chartMountTo);
         }
       }
     } catch (error) {

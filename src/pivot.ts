@@ -56,6 +56,7 @@ export function load(
   let configuratorVisible = false;
   let expanded = false;
   let chartVisible = false;
+  let chartFieldsVisible = false;
   let chart: PivotChartRef | undefined;
   let savedAvailable = hasSavedPivotReport();
 
@@ -87,8 +88,10 @@ export function load(
   gridContainer.className = 'pivot-grid-container h-full overflow-hidden';
   let grid: HTMLRevoGridElement;
   const fieldsDrawer = createFinancialFieldsDrawer(() => {
+    const pivotWasVisible = configuratorVisible;
     configuratorVisible = false;
-    applyPivotOptions();
+    chartFieldsVisible = false;
+    if (pivotWasVisible) applyPivotOptions();
     refreshLayout();
   });
 
@@ -106,7 +109,7 @@ export function load(
   function refreshLayout() {
     header.state = {
       activePreset,
-      configuratorVisible,
+      configuratorVisible: chartVisible ? chartFieldsVisible : configuratorVisible,
       expanded,
       chartVisible,
       savedAvailable,
@@ -167,6 +170,15 @@ export function load(
     replacePivotOptions();
   });
   header.addEventListener(FINANCIAL_PIVOT_CONFIGURATOR_EVENT, () => {
+    if (chartVisible) {
+      if (chartFieldsVisible) fieldsDrawer.hide();
+      else {
+        chartFieldsVisible = true;
+        fieldsDrawer.show(document.activeElement as HTMLElement, 'chart');
+      }
+      refreshLayout();
+      return;
+    }
     if (configuratorVisible) fieldsDrawer.hide();
     else {
       fieldsDrawer.show(document.activeElement as HTMLElement);
@@ -218,9 +230,10 @@ export function load(
       if (action === 'export-xlsx') await exportFinancialXlsx(grid);
       if (action === 'print') await printFinancialPivot(grid);
       if (action === 'chart') {
+        fieldsDrawer.hide();
         chartVisible = !chartVisible;
         refreshLayout();
-        if (chartVisible && !chart) chart = await mountFinancialChart(grid, chartContainer, options.chartTitle);
+        if (chartVisible && !chart) chart = await mountFinancialChart(grid, chartContainer, options.chartTitle, fieldsDrawer.chartMountTo);
       }
     } catch (error) {
       if (action === 'chart') { chartVisible = false; refreshLayout(); }

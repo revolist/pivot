@@ -33,7 +33,7 @@
         </div>
       </div>
       <button type="button" @click="reset">Reset report</button>
-      <button type="button" aria-haspopup="dialog" :aria-expanded="fieldsVisible" @click="toggleFields">Fields</button>
+      <button type="button" aria-haspopup="dialog" :aria-expanded="fieldsVisible" @click="toggleFields">Config</button>
       <div class="dashboard-summary" aria-live="polite">
         <span>{{ filteredRows.length.toLocaleString() }} filtered lines · {{ yearControl.label }} · {{ brandControl.label }}</span>
       </div>

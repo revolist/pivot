@@ -1,3 +1,4 @@
+import { createDialogCloseButton } from '@revolist/revogrid-pro';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 
 /** Application-owned overlay for the Pivot configurator's public `mountTo` target. */
@@ -17,14 +18,10 @@ export function createFinancialFieldsDrawer(onClose: () => void) {
   dialog.inert = true;
 
   const heading = document.createElement('div');
-  heading.className = 'financial-pivot-fields-drawer__header';
+  heading.className = 'rv-dialog__header financial-pivot-fields-drawer__header';
   const title = document.createElement('h2');
   title.textContent = 'Pivot fields';
-  const closeButton = document.createElement('button');
-  closeButton.type = 'button';
-  closeButton.className = 'financial-pivot-fields-drawer__close';
-  closeButton.setAttribute('aria-label', 'Close fields');
-  closeButton.textContent = '×';
+  const closeButton = createDialogCloseButton(document, 'Close fields', () => hide());
   heading.append(title, closeButton);
 
   const hint = document.createElement('p');
@@ -32,11 +29,16 @@ export function createFinancialFieldsDrawer(onClose: () => void) {
   hint.textContent = 'Drag fields between Rows, Columns, Values, and Filters to change the report.';
   const mountTo = document.createElement('div');
   mountTo.className = 'financial-pivot-fields-drawer__mount';
-  dialog.append(heading, hint, mountTo);
+  const chartMountTo = document.createElement('div');
+  chartMountTo.className = 'financial-pivot-fields-drawer__chart';
+  chartMountTo.hidden = true;
+  dialog.append(heading, hint, mountTo, chartMountTo);
   document.body.append(backdrop, dialog);
 
   const syncTheme = (dark = currentTheme().isDark()) => {
     const theme = dark ? 'darkCompact' : 'compact';
+    dialog.dataset.theme = theme;
+    chartMountTo.dataset.theme = theme;
     mountTo.querySelectorAll<HTMLRevoGridElement>('revo-grid').forEach((grid) => {
       if (grid.theme !== theme) grid.theme = theme;
     });
@@ -84,12 +86,18 @@ export function createFinancialFieldsDrawer(onClose: () => void) {
     }
   };
   backdrop.addEventListener('click', hide);
-  closeButton.addEventListener('click', hide);
   document.addEventListener('keydown', onKeyDown);
 
   return {
     mountTo,
-    show(trigger?: HTMLElement | null) {
+    chartMountTo,
+    show(trigger?: HTMLElement | null, mode: 'pivot' | 'chart' = 'pivot') {
+      const chart = mode === 'chart';
+      title.textContent = chart ? 'Chart settings' : 'Pivot fields';
+      dialog.setAttribute('aria-label', title.textContent);
+      hint.hidden = chart;
+      mountTo.hidden = chart;
+      chartMountTo.hidden = !chart;
       returnFocus = trigger ?? document.activeElement as HTMLElement;
       backdrop.hidden = false;
       dialog.hidden = false;
