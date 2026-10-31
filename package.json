@@ -7,7 +7,7 @@
   "type": "module",
   "packageManager": "pnpm@10.13.1",
   "engines": {
-    "node": ">=20",
+    "node": ">=22.22.3",
     "pnpm": ">=10"
   },
   "repository": {
@@ -19,6 +19,8 @@
     "url": "https://github.com/revolist/pivot/issues"
   },
   "scripts": {
+    "data:contoso": "python3 scripts/import-contoso.py",
+    "data:contoso:test": "python3 -B scripts/test-import-contoso.py",
     "dev": "pnpm dev:ts",
     "dev:ts": "vite --mode ts",
     "dev:react": "vite --mode react",
@@ -32,13 +34,14 @@
     "build:frameworks": "node scripts/build-frameworks.mjs",
     "build:pages": "pnpm build && node scripts/build-pages.mjs",
     "preview": "vite preview",
-    "test": "pnpm test:unit && pnpm test:repository",
+    "test": "pnpm test:trial-compatibility && pnpm test:unit && pnpm test:repository",
     "test:unit": "vitest run",
     "test:repository": "node scripts/verify-repository.mjs",
     "test:e2e": "playwright test",
     "media:verify": "node scripts/verify-repository.mjs --media",
     "media:inspect": "pnpm build && node scripts/record-media.mjs --inspect",
-    "media:record": "pnpm build && node scripts/record-media.mjs"
+    "media:record": "pnpm build && node scripts/record-media.mjs",
+    "test:trial-compatibility": "node --test scripts/trial-filter-identity.test.mjs"
   },
   "dependencies": {
     "@angular/common": "20.3.26",
@@ -46,13 +49,14 @@
     "@angular/core": "20.3.26",
     "@angular/platform-browser": "20.3.26",
     "@angular/platform-browser-dynamic": "20.3.26",
-    "@revolist/angular-datagrid": "4.28.0",
-    "@revolist/react-datagrid": "4.28.0",
-    "@revolist/revogrid": "4.28.0",
+    "@revolist/angular-datagrid": "4.29.1",
+    "@revolist/react-datagrid": "4.29.1",
+    "@revolist/revogrid": "4.29.1",
     "@revolist/revogrid-column-numeral": "2.0.11",
-    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@2.9.5",
-    "@revolist/pivot": "npm:@revolist/pivot-trial@2.9.5",
-    "@revolist/vue3-datagrid": "4.28.0",
+    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@3.0.18",
+    "@revolist/pivot": "npm:@revolist/pivot-trial@3.0.18",
+    "@revolist/vue3-datagrid": "4.29.1",
+    "fflate": "0.8.3",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "rxjs": "7.8.2",
@@ -77,5 +81,10 @@
     "vite": "8.2.1",
     "vitest": "4.1.10",
     "vue-tsc": "2.2.12"
+  },
+  "pnpm": {
+    "overrides": {
+      "@revolist/revogrid": "4.29.1"
+    }
   }
 }

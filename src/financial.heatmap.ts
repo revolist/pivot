@@ -2,12 +2,10 @@ import type { ColumnType, PropertiesFunc } from '@revolist/revogrid';
 import { mergeCellProperties } from '@revolist/revogrid-pro';
 
 export type FinancialHeatmapField =
-  | 'Units Sold'
-  | 'Sales'
-  | 'Profit'
-  | 'Gross Sales'
-  | 'Discounts'
-  | 'COGS';
+  | 'Quantity'
+  | 'Revenue'
+  | 'Gross Profit'
+  | 'Cost';
 
 interface FinancialHeatmapScale {
   sum: number;
@@ -16,12 +14,10 @@ interface FinancialHeatmapScale {
 }
 
 const FINANCIAL_HEATMAP_SCALES: Record<FinancialHeatmapField, FinancialHeatmapScale> = {
-  'Units Sold': { sum: 50_000, point: 5_000, positive: [37, 99, 235] },
-  Sales: { sum: 5_000_000, point: 350_000, positive: [15, 255, 55] },
-  Profit: { sum: 2_000_000, point: 150_000, positive: [22, 163, 74] },
-  'Gross Sales': { sum: 16_000_000, point: 500_000, positive: [5, 150, 105] },
-  Discounts: { sum: 1_000_000, point: 40_000, positive: [217, 119, 6] },
-  COGS: { sum: 10_000_000, point: 350_000, positive: [124, 58, 237] },
+  Quantity: { sum: 12_500, point: 500, positive: [37, 99, 235] },
+  Revenue: { sum: 4_400_000, point: 100_000, positive: [15, 255, 55] },
+  'Gross Profit': { sum: 2_500_000, point: 60_000, positive: [22, 163, 74] },
+  Cost: { sum: 2_000_000, point: 50_000, positive: [124, 58, 237] },
 };
 
 const NEGATIVE_RGB = [220, 38, 38] as const;
@@ -57,13 +53,13 @@ export function createFinancialHeatmapCellProperties(
 const financialCurrency = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
-  minimumFractionDigits: 0,
+  minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
 const financialNumber = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
+  maximumFractionDigits: 0,
 });
 
 export function createFinancialHeatmapColumnType(

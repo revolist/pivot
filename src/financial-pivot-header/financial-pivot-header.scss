@@ -4,6 +4,21 @@
   --financial-pivot-expanded-background: var(--sl-color-bg, #ffffff);
 }
 
+.financial-pivot-showcase[data-expanded='true'] {
+  position: fixed;
+  inset: 8px;
+  z-index: 1000;
+  height: auto;
+  max-height: calc(100dvh - 16px);
+  padding: 8px;
+  overflow: hidden;
+  background: var(--financial-pivot-expanded-background);
+}
+
+body:has(.financial-pivot-showcase[data-expanded='true']) {
+  overflow: hidden;
+}
+
 .financial-pivot-showcase .pivot-config {
   --pv-cfg-width: 304px;
   overflow-x: hidden;
@@ -14,6 +29,16 @@
   width: 100%;
 }
 
+/* The standalone host may select dark mode through the grid's media-aware theme. */
+.financial-pivot-showcase:has(revo-grid[theme^='dark']) {
+  --rv-ui-surface: #1f1f1f;
+  --rv-ui-surface-sunken: #111111;
+  --rv-ui-text: #f5f5f5;
+  --rv-ui-text-muted: #a3a3a3;
+  --rv-ui-border: #404040;
+  --financial-pivot-expanded-background: var(--rv-ui-surface-sunken);
+}
+
 :where(.dark, [data-theme^='dark']) .financial-pivot-showcase {
   --financial-pivot-expanded-background: var(--rv-ui-surface-sunken);
 }
@@ -22,20 +47,14 @@ financial-pivot-header {
   --financial-header-text: #0f172a;
 
   display: block;
+  flex: 0 0 auto;
   width: 100%;
   color: var(--financial-header-text);
 }
 
-:where(.dark, [data-theme^='dark']) financial-pivot-header {
+:where(.dark, [data-theme^='dark']) financial-pivot-header,
+.financial-pivot-showcase:has(revo-grid[theme^='dark']) financial-pivot-header {
   --financial-header-text: var(--rv-ui-text);
-  --rv-segmented-bg: var(--rv-ui-surface-sunken);
-  --rv-segmented-border: var(--rv-ui-border);
-  --rv-segmented-item-color: var(--rv-ui-text-muted);
-  --rv-segmented-item-hover-color: var(--rv-ui-text);
-  --rv-segmented-active-bg: var(--rv-ui-surface-elevated);
-  --rv-segmented-active-color: var(--rv-ui-text);
-  --rv-segmented-active-shadow: rgb(0 0 0 / 0.35);
-  --rv-segmented-active-border: var(--rv-ui-border-strong);
 }
 
 .financial-pivot-header {
@@ -47,6 +66,8 @@ financial-pivot-header {
 .financial-pivot-header__toolbar {
   box-sizing: border-box;
   display: flex;
+  width: 100%;
+  min-width: 0;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
@@ -54,16 +75,9 @@ financial-pivot-header {
   padding-inline: 8px;
 }
 
-.financial-pivot-header__report {
-  display: flex;
-  flex: 1 1 540px;
-  min-width: 0;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .financial-pivot-header__actions {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   align-items: center;
   align-self: flex-start;
@@ -76,4 +90,317 @@ financial-pivot-header {
 
 .financial-pivot-header__button {
   @include demo-controls.demo-button;
+}
+
+.financial-pivot-header__question {
+  margin: 0;
+  padding-inline: 2px;
+  color: var(--rv-ui-text-muted, #64748b);
+  font-size: 11px;
+  line-height: 16px;
+}
+.financial-pivot-header__menu { position: relative; }
+.financial-pivot-header__menu summary { cursor: pointer; list-style: none; }
+.financial-pivot-header__menu summary::-webkit-details-marker { display: none; }
+.financial-pivot-header__menu-items {
+  // Escape the scrollable report workspace when opening above the toolbar.
+  position: fixed;
+  z-index: 1200;
+  top: 100%;
+  right: 0;
+  box-sizing: border-box;
+  width: min(320px, calc(100vw - 24px));
+  max-height: min(640px, calc(100dvh - 110px));
+  overflow-y: auto;
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--rv-ui-border, #d8e1e8);
+  border-radius: 7px;
+  background: var(--financial-pivot-expanded-background);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.12);
+}
+.financial-pivot-header__menu-title { font-size: 14px; line-height: 20px; }
+.financial-pivot-header__menu-intro { margin: 0; color: var(--rv-ui-text-muted, #64748b); font-size: 11px; line-height: 16px; }
+.financial-pivot-header__menu-section {
+  margin-top: 9px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rv-ui-border, #d8e1e8);
+  color: var(--rv-ui-text-muted, #64748b);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.financial-pivot-header__menu-items .financial-pivot-header__menu-action {
+  height: auto;
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 10px;
+  text-align: left;
+}
+.financial-pivot-header__menu-action small { color: var(--rv-ui-text-muted, #64748b); font-size: 10px; line-height: 14px; }
+.financial-pivot-header__menu-action:disabled { opacity: 0.5; cursor: not-allowed; }
+.financial-pivot-header__name-label { display: grid; gap: 4px; font-size: 11px; font-weight: 600; }
+.financial-pivot-header__name-label input { width: 100%; box-sizing: border-box; font-size: 12px; }
+.financial-pivot-header__saved-row { display: flex; gap: 5px; }
+.financial-pivot-header__saved-row .financial-pivot-header__menu-action { flex: 1; min-width: 0; }
+.financial-pivot-header__saved-row > button:last-child { flex: 0 0 auto; }
+.financial-pivot-header__button[aria-pressed='true'] {
+  border-color: var(--rv-ui-accent, #087e66);
+  color: var(--rv-ui-accent, #087e66);
+}
+.financial-pivot-showcase .pivot-grid-container { min-width: 0 !important; }
+.financial-pivot-showcase .financial-pivot-chart {
+  height: 290px;
+  min-height: 290px;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+}
+.financial-pivot-showcase .financial-pivot-chart .rv-pivot-chart-embedded {
+  border: 0;
+  border-radius: 0;
+}
+@media (max-width: 1439px) {
+  .financial-pivot-showcase .pivot-config { --pv-cfg-width: 280px; }
+}
+
+/* The main report owns its presentation; Pivot continues to render the grid. */
+.financial-pivot-header { gap: 0; }
+.financial-pivot-header__preset-switch {
+  display: inline-flex;
+  box-sizing: border-box;
+  width: auto;
+  flex: 0 1 auto;
+  align-self: flex-end;
+  height: 52px;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.financial-pivot-header__preset-tab {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 52px;
+  min-height: 52px;
+  align-items: center;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.financial-pivot-header__preset-tab.is-active {
+  border-bottom-color: currentColor;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+.financial-pivot-header__surface {
+  display: grid;
+  min-width: 0;
+  gap: 0;
+  padding: 8px 0 0;
+  background: var(--financial-pivot-expanded-background);
+}
+.financial-pivot-header__toolbar {
+  min-height: 52px;
+  padding: 0;
+  gap: 0 12px;
+}
+.financial-pivot-header__actions {
+  min-height: 52px;
+  gap: 6px;
+  align-self: center;
+  margin-left: auto;
+  padding-right: 4px;
+}
+.financial-pivot-header__action-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.financial-pivot-header__button,
+.financial-pivot-header__menu > summary.financial-pivot-header__button {
+  height: 30px;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--rv-ui-border, #d8e1e8);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+  font-size: 11px;
+}
+.financial-pivot-header__button--expand {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  font-size: 18px;
+}
+.financial-pivot-header__button--expand:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--rv-ui-surface, #f6f8fa);
+}
+.financial-pivot-header__view-switch {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 3px;
+  margin-right: 6px;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--rv-ui-accent, #087e66) 40%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--rv-ui-accent, #087e66) 9%, var(--financial-pivot-expanded-background));
+}
+.financial-pivot-header__view-button {
+  height: 34px;
+  min-height: 34px;
+  gap: 7px;
+  padding-inline: 12px;
+  border-color: transparent;
+  font-size: 12px;
+  font-weight: 600;
+}
+.financial-pivot-header__view-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.financial-pivot-header__view-button[aria-pressed='true'],
+.financial-pivot-header__view-button[aria-pressed='true']:hover {
+  border-color: var(--rv-ui-accent, #087e66);
+  background: var(--rv-ui-accent, #087e66);
+  color: var(--rv-ui-accent-fg, #fff);
+  box-shadow: none;
+}
+.financial-pivot-header__view-button:focus-visible {
+  outline: 2px solid var(--financial-header-text);
+  outline-offset: 2px;
+}
+@media (max-width: 900px) {
+  .financial-pivot-header__toolbar { flex-wrap: wrap; }
+  .financial-pivot-header__preset-switch { width: 100%; }
+  .financial-pivot-header__actions { margin-left: 0; }
+}
+@media (max-width: 640px) {
+  .financial-pivot-header__actions { flex-wrap: wrap; }
+  .financial-pivot-header__preset-switch {
+    flex-basis: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    scrollbar-width: thin;
+    box-sizing: border-box;
+    padding-inline-end: 18px;
+    mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent);
+  }
+}
+.financial-pivot-showcase { position: relative; gap: 0; min-height: 0; }
+/* Keep the report flush when another demo loads its spacing utilities later. */
+.financial-pivot-showcase.gap-2 { gap: 0; }
+.financial-pivot-showcase .pivot-grid-container {
+  background: var(--financial-pivot-expanded-background);
+}
+.financial-pivot-showcase .financial-pivot-chart { margin-block: 8px; }
+.financial-pivot-showcase--chart { overflow: hidden; }
+.financial-pivot-showcase--chart .financial-pivot-chart {
+  flex: 1 1 0;
+  height: 0;
+  min-height: 0;
+  overflow: auto;
+}
+.financial-pivot-showcase--chart .financial-pivot-grid-view {
+  display: none;
+}
+
+.financial-pivot-fields-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  border: 0;
+  background: rgb(18 32 46 / 42%);
+  cursor: default;
+}
+.financial-pivot-fields-backdrop[hidden],
+.financial-pivot-fields-drawer[hidden] { display: none; }
+.financial-pivot-fields-drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  z-index: 1101;
+  box-sizing: border-box;
+  display: flex;
+  width: min(390px, 96vw);
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid var(--rv-ui-border, #d8e1e8);
+  background: var(--vp-c-bg, #fff);
+  color: var(--vp-c-text-1, #243345);
+  box-shadow: -8px 0 28px rgb(15 23 42 / 18%);
+}
+.financial-pivot-fields-drawer__header {
+  display: flex;
+  min-height: 55px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--rv-ui-border, #d8e1e8);
+}
+.financial-pivot-fields-drawer__header h2 { margin: 0; font-size: 16px; }
+.financial-pivot-fields-drawer__close {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 24px;
+  cursor: pointer;
+}
+.financial-pivot-fields-drawer__hint {
+  margin: 0;
+  padding: 10px 18px;
+  color: var(--rv-ui-text-muted, #64748b);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.financial-pivot-fields-drawer__mount { min-height: 0; flex: 1; overflow: auto; }
+.financial-pivot-fields-drawer .pivot-config,
+.financial-pivot-fields-drawer__mount.pivot-config {
+  --pv-cfg-width: 100%;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+}
+.financial-pivot-fields-drawer :focus-visible { outline: 2px solid #2c9a77; outline-offset: 2px; }
+@media (max-width: 1100px) {
+  .financial-pivot-header__toolbar { flex-wrap: wrap; }
+  .financial-pivot-header__actions { justify-content: flex-start; }
+}
+
+// Keep the mobile configurator inside its host; the grid virtualizes wide reports.
+// This overrides the desktop minimum supplied by each framework wrapper.
+@media (max-width: 767px) {
+  .financial-pivot-showcase .pivot-grid-container {
+    min-width: 0 !important;
+    width: 100%;
+  }
 }
