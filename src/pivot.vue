@@ -35,7 +35,7 @@
           :pivot.prop="pivot"
           :pivot-summary-panel.prop="summaryOptions"
           :pivot-charts.prop="FINANCIAL_PIVOT_CHARTS"
-          :pivot-charts-ui.prop="FINANCIAL_PIVOT_CHARTS_UI"
+          :pivot-charts-ui.prop="chartUi"
           :theme="isDark ? 'darkCompact' : 'compact'"
           :plugins="plugins"
           :column-types="columnTypes"
@@ -96,10 +96,16 @@ const loadError = ref('');
 const actionError = ref('');
 let fieldsDrawer: FinancialFieldsDrawer | undefined;
 const configuratorMount = shallowRef<HTMLElement>();
+const chartSettingsMount = shallowRef<HTMLElement>();
+const chartUi = computed(() => ({ ...FINANCIAL_PIVOT_CHARTS_UI, settingsMountTo: chartSettingsMount.value }));
 
 onMounted(() => {
-  fieldsDrawer = createFinancialFieldsDrawer(() => { configuratorVisible.value = false; });
+  fieldsDrawer = createFinancialFieldsDrawer(() => {
+    configuratorVisible.value = false;
+    chartFieldsVisible.value = false;
+  });
   configuratorMount.value = fieldsDrawer.mountTo;
+  chartSettingsMount.value = fieldsDrawer.chartMountTo;
   disconnectTheme = observeCurrentTheme((value) => {
     isDark.value = value;
   });
@@ -118,6 +124,7 @@ const pivotConfig = shallowRef<PivotConfig>(restorePivotConfig(activePreset.valu
 const configuratorVisible = ref(false);
 const expanded = ref(false);
 const chartVisible = ref(false);
+const chartFieldsVisible = ref(false);
 const chartContainer = ref<HTMLElement>();
 let chart: PivotChartRef | undefined;
 const savedAvailable = ref(hasSavedPivotReport());
@@ -137,7 +144,7 @@ watch([gridElement, chartVisible], async ([grid, visible], _previous, onCleanup)
   try {
     await grid.componentOnReady();
     if (!active) return;
-    const mounted = await mountFinancialChart(grid, chartContainer.value, props.chartTitle);
+    const mounted = await mountFinancialChart(grid, chartContainer.value, props.chartTitle, fieldsDrawer?.chartMountTo);
     if (active) chart = mounted;
     else mounted.destroy();
   } catch (error) {
@@ -168,7 +175,7 @@ const summaryMount = shallowRef<HTMLElement>();
 const summaryOptions = computed(() => ({ mountTo: summaryMount.value }));
 const headerState = computed<FinancialPivotHeaderState>(() => ({
   activePreset: activePreset.value,
-  configuratorVisible: configuratorVisible.value,
+  configuratorVisible: chartVisible.value ? chartFieldsVisible.value : configuratorVisible.value,
   expanded: expanded.value,
   chartVisible: chartVisible.value,
   savedAvailable: savedAvailable.value,
@@ -186,6 +193,14 @@ const pivot = computed(() =>
 );
 
 const toggleFields = () => {
+  if (chartVisible.value && gridElement.value) {
+    if (chartFieldsVisible.value) fieldsDrawer?.hide();
+    else {
+      chartFieldsVisible.value = true;
+      fieldsDrawer?.show(document.activeElement as HTMLElement, 'chart');
+    }
+    return;
+  }
   if (configuratorVisible.value) fieldsDrawer?.hide();
   else {
     fieldsDrawer?.show(document.activeElement as HTMLElement);
@@ -246,6 +261,7 @@ const onAction = async (event: Event) => {
     if (action === 'export-xlsx' && gridElement.value) await exportFinancialXlsx(gridElement.value);
     if (action === 'print' && gridElement.value) await printFinancialPivot(gridElement.value);
     if (action === 'chart') {
+      fieldsDrawer?.hide();
       chartVisible.value = !chartVisible.value;
     }
   } catch {

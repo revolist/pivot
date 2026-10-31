@@ -75,9 +75,12 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
   const [pivotConfig, setPivotConfig] = useState<PivotConfig>(() => restorePivotConfig(activePreset));
   const [configuratorVisible, setConfiguratorVisible] = useState(false);
   const [configuratorMount, setConfiguratorMount] = useState<HTMLElement>();
+  const [chartSettingsMount, setChartSettingsMount] = useState<HTMLElement>();
+  const chartUi = useMemo(() => ({ ...FINANCIAL_PIVOT_CHARTS_UI, settingsMountTo: chartSettingsMount }), [chartSettingsMount]);
   const fieldsDrawer = useRef<FinancialFieldsDrawer>();
   const [expanded, setExpanded] = useState(false);
   const [chartVisible, setChartVisible] = useState(false);
+  const [chartFieldsVisible, setChartFieldsVisible] = useState(false);
   const [savedAvailable, setSavedAvailable] = useState(hasSavedPivotReport);
   const [reportsRevision, setReportsRevision] = useState(0);
   const [actionError, setActionError] = useState('');
@@ -112,9 +115,13 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
     return () => observer.disconnect();
   }, [loading, pivotConfig]);
   useEffect(() => {
-    const drawer = createFinancialFieldsDrawer(() => setConfiguratorVisible(false));
+    const drawer = createFinancialFieldsDrawer(() => {
+      setConfiguratorVisible(false);
+      setChartFieldsVisible(false);
+    });
     fieldsDrawer.current = drawer;
     setConfiguratorMount(drawer.mountTo);
+    setChartSettingsMount(drawer.chartMountTo);
     return () => { drawer.destroy(); fieldsDrawer.current = undefined; };
   }, []);
 
@@ -139,7 +146,7 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
   useEffect(() => {
     if (!chartVisible || chartRef.current || !chartContainer.current || !gridRef.current) return;
     let cancelled = false;
-    mountFinancialChart(gridRef.current, chartContainer.current, chartTitle).then((chart) => {
+    mountFinancialChart(gridRef.current, chartContainer.current, chartTitle, fieldsDrawer.current?.chartMountTo).then((chart) => {
       if (cancelled) chart.destroy();
       else chartRef.current = chart;
     }).catch((error) => {
@@ -171,12 +178,12 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
 
   const headerState = useMemo<FinancialPivotHeaderState>(() => ({
     activePreset,
-    configuratorVisible,
+    configuratorVisible: chartVisible ? chartFieldsVisible : configuratorVisible,
     expanded,
     chartVisible,
     savedAvailable,
     savedReports: listSavedPivotReports(),
-  }), [activePreset, configuratorVisible, expanded, chartVisible, savedAvailable, pivotConfig, reportsRevision]);
+  }), [activePreset, configuratorVisible, chartFieldsVisible, expanded, chartVisible, savedAvailable, pivotConfig, reportsRevision]);
 
   useEffect(() => {
     if (headerRef.current) headerRef.current.state = headerState;
@@ -195,6 +202,14 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
       selectPreset((event as CustomEvent<FinancialPresetId>).detail);
     };
     const onConfigurator = () => {
+      if (chartVisible && gridRef.current) {
+        if (chartFieldsVisible) fieldsDrawer.current?.hide();
+        else {
+          setChartFieldsVisible(true);
+          fieldsDrawer.current?.show(document.activeElement as HTMLElement, 'chart');
+        }
+        return;
+      }
       if (configuratorVisible) fieldsDrawer.current?.hide();
       else {
         fieldsDrawer.current?.show(document.activeElement as HTMLElement);
@@ -233,7 +248,10 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
         if (action === 'export' && gridRef.current) await exportFinancialCsv(gridRef.current);
         if (action === 'export-xlsx' && gridRef.current) await exportFinancialXlsx(gridRef.current);
         if (action === 'print' && gridRef.current) await printFinancialPivot(gridRef.current);
-        if (action === 'chart') setChartVisible((value) => !value);
+        if (action === 'chart') {
+          fieldsDrawer.current?.hide();
+          setChartVisible((value) => !value);
+        }
       } catch {
         setActionError('Could not complete this report action. Please try again.');
       }
@@ -248,7 +266,7 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
       header.removeEventListener(FINANCIAL_PIVOT_EXPANDED_EVENT, onExpanded);
       header.removeEventListener(FINANCIAL_PIVOT_ACTION_EVENT, onAction);
     };
-  }, [selectPreset, pivotConfig, activePreset, configuratorVisible]);
+  }, [selectPreset, pivotConfig, activePreset, configuratorVisible, chartVisible, chartFieldsVisible]);
 
   return (
     <div
@@ -277,7 +295,7 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
             columns={columns}
             pivot={pivot}
             pivotCharts={FINANCIAL_PIVOT_CHARTS}
-            pivotChartsUi={FINANCIAL_PIVOT_CHARTS_UI}
+            pivotChartsUi={chartUi}
             theme={isDark ? 'darkCompact' : 'compact'}
             plugins={plugins}
             columnTypes={columnTypes}

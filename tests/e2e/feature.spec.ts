@@ -30,7 +30,7 @@ test(`${feature.title} starts with a clear sales report and restores only on req
   await expect(page.locator('revogr-header .rgHeaderCell', { hasText: 'January' }).first()).toBeVisible();
   await expect(page.getByRole('gridcell', { name: 'Grand Total' }).first()).toBeVisible();
 
-  const fields = page.getByRole('button', { name: 'Fields', exact: true });
+  const fields = page.getByRole('button', { name: 'Config', exact: true });
   await expect(fields).toHaveAttribute('aria-pressed', 'false');
   await fields.click();
   await expect(fields).toHaveAttribute('aria-pressed', 'true');
@@ -87,7 +87,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
     expect(bounds!.height).toBeLessThanOrEqual(viewport.height - 16);
     expect(await page.locator('body').evaluate(body => getComputedStyle(body).overflow)).toBe('hidden');
     await page.getByRole('tab', { name: 'Product Performance' }).click();
-    await page.getByRole('button', { name: 'Fields', exact: true }).click();
+    await page.getByRole('button', { name: 'Config', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Pivot fields' })).toBeVisible();
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Exit expanded workspace' }).click();
@@ -126,7 +126,7 @@ for (const { width, height, showFields } of [
     await page.addStyleTag({ content: '#app { width: calc(100vw - 300px); margin-left: 300px; padding: 0; }' });
     const grid = page.locator('revo-grid').first();
     await expect(grid).toBeVisible({ timeout: 20_000 });
-    const fields = page.getByRole('button', { name: 'Fields', exact: true });
+    const fields = page.getByRole('button', { name: 'Config', exact: true });
     if (await fields.getAttribute('aria-pressed') !== String(showFields)) await fields.click();
     await expect(fields).toHaveAttribute('aria-pressed', String(showFields));
     const lastHeader = page.getByRole('columnheader', { name: 'Grand Total' }).first();
@@ -163,7 +163,7 @@ test('mobile report actions and tabs remain keyboard reachable', async ({ page }
   await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('tab', { name: 'Product Performance' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('tab', { name: 'Product Performance' })).toBeInViewport();
-  const fields = page.getByRole('button', { name: 'Fields', exact: true });
+  const fields = page.getByRole('button', { name: 'Config', exact: true });
   await fields.click();
   await expect(page.getByRole('dialog', { name: 'Pivot fields' })).toBeVisible();
   await page.keyboard.press('Escape');

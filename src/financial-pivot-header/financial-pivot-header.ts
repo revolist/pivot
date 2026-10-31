@@ -159,7 +159,7 @@ class FinancialPivotHeader extends HTMLElement {
     exploreActions.setAttribute('role', 'group');
     exploreActions.setAttribute('aria-label', 'Explore report');
     exploreActions.append(
-      actionButton('Fields', () => this.emit(FINANCIAL_PIVOT_CONFIGURATOR_EVENT), 'fields', state.configuratorVisible),
+      actionButton('Config', () => this.emit(FINANCIAL_PIVOT_CONFIGURATOR_EVENT), 'fields', state.configuratorVisible),
       actionButton('Export CSV', () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export'), 'export'),
     );
     const manageActions = element('div', 'financial-pivot-header__action-group financial-pivot-header__action-group--manage');
