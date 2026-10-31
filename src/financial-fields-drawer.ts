@@ -1,4 +1,4 @@
-import { createDialogCloseButton } from '@revolist/revogrid-pro';
+import { createDialogButton } from '@revolist/revogrid-pro';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 
 /** Application-owned overlay for the Pivot configurator's public `mountTo` target. */
@@ -21,7 +21,10 @@ export function createFinancialFieldsDrawer(onClose: () => void) {
   heading.className = 'rv-dialog__header financial-pivot-fields-drawer__header';
   const title = document.createElement('h2');
   title.textContent = 'Pivot fields';
-  const closeButton = createDialogCloseButton(document, 'Close fields', () => hide());
+  const closeButton = createDialogButton(document, '×', () => hide());
+  closeButton.className = 'rv-dialog__close';
+  closeButton.setAttribute('aria-label', 'Close fields');
+  closeButton.title = 'Close fields';
   heading.append(title, closeButton);
 
   const hint = document.createElement('p');
