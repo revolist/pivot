@@ -19,12 +19,12 @@ export function createFinancialFieldsDrawer(onClose: () => void) {
   dialog.inert = true;
 
   const heading = document.createElement('div');
-  heading.className = 'financial-pivot-fields-drawer__header';
+  heading.className = 'financial-pivot-fields-drawer__header rv-dialog__header';
   const title = document.createElement('h2');
   title.textContent = 'Pivot fields';
   const closeButton = createControl(document, 'button', { type: 'button' });
   closeButton.type = 'button';
-  closeButton.className = controlAttributes('button', { class: 'financial-pivot-fields-drawer__close' }).class;
+  closeButton.className = controlAttributes('button', { class: 'financial-pivot-fields-drawer__close rv-dialog__close' }).class;
   closeButton.setAttribute('aria-label', 'Close fields');
   closeButton.textContent = '×';
   heading.append(title, closeButton);

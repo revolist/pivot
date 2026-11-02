@@ -327,8 +327,8 @@ financial-pivot-header {
   flex-direction: column;
   overflow: hidden;
   border-left: 1px solid var(--rv-ui-border, #d8e1e8);
-  background: var(--vp-c-bg, #fff);
-  color: var(--vp-c-text-1, #243345);
+  background: var(--rv-ui-surface, var(--vp-c-bg, #fff));
+  color: var(--rv-ui-text, var(--vp-c-text-1, #243345));
   box-shadow: -8px 0 28px rgb(15 23 42 / 18%);
 }
 .financial-pivot-fields-drawer__header {

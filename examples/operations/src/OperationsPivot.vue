@@ -36,6 +36,7 @@
             hide-attribution
             readonly
             resize
+            filter
             :source="scopedTickets"
             :columns="columns"
             :plugins="plugins"
