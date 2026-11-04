@@ -3,48 +3,53 @@
     class="financial-pivot-showcase grow flex flex-col gap-2 h-full box-border"
     :class="{ 'financial-pivot-showcase--chart': chartVisible }"
     :data-expanded="expanded"
+    @keydown.esc="configuratorVisible = false"
   >
-    <financial-pivot-header
-      :state.prop="headerState"
-      @financial-pivot-preset-select="onPresetSelect"
-      @financial-pivot-configurator-toggle="toggleFields"
-      @financial-pivot-expanded-toggle="expanded = !expanded"
-      @financial-pivot-action="onAction"
-    />
-    <div ref="summaryMount" />
-    <div v-if="loading" role="status" class="financial-pivot-header__question">Loading Contoso retail data…</div>
-    <div v-if="loadError" role="alert" class="financial-pivot-header__question">{{ loadError }}</div>
-    <div v-if="actionError" role="alert" class="financial-pivot-header__question">{{ actionError }}</div>
-    <div v-show="chartVisible" ref="chartContainer" class="financial-pivot-chart" aria-label="Pivot chart" />
+    <div class="financial-pivot-main">
+      <financial-pivot-header
+        :state.prop="headerState"
+        @financial-pivot-preset-select="onPresetSelect"
+        @financial-pivot-configurator-toggle="toggleFields"
+        @financial-pivot-expanded-toggle="expanded = !expanded"
+        @financial-pivot-action="onAction"
+      />
+      <div v-if="loading" role="status" class="financial-pivot-header__question">Loading Contoso retail data…</div>
+      <div v-if="loadError" role="alert" class="financial-pivot-header__question">{{ loadError }}</div>
+      <div v-if="actionError" role="alert" class="financial-pivot-header__question">{{ actionError }}</div>
+      <div v-show="chartVisible" ref="chartContainer" class="financial-pivot-chart" aria-label="Pivot chart" />
 
-    <div v-if="!loading && !loadError" class="financial-pivot-grid-view grow min-h-0 overflow-auto" :aria-hidden="chartVisible">
-      <div
-        ref="gridHost"
-        class="pivot-grid-container h-full overflow-hidden gap-1"
-      >
-        <RevoGrid
-          class="overflow-hidden skip-style h-full min-h-0 cell-border"
-          hide-attribution
-          range
-          resize
-          filter
-          :multi-row-header.prop="FINANCIAL_MULTI_ROW_HEADER"
-          :colSize="columnSize"
-          :source="rows"
-          :columns="FINANCIAL_COLUMNS"
-          :pivot.prop="pivot"
-          :pivot-summary-panel.prop="summaryOptions"
-          :pivot-charts.prop="FINANCIAL_PIVOT_CHARTS"
-          :pivot-charts-ui.prop="FINANCIAL_PIVOT_CHARTS_UI"
-          :theme="isDark ? 'darkCompact' : 'compact'"
-          :plugins="plugins"
-          :column-types="columnTypes"
-          readonly
-          @aftergridinit="onGridReady"
-          @pivot-config-update="configUpdate"
-        />
+      <div v-if="!loading && !loadError" class="financial-pivot-grid-view grow min-h-0 overflow-auto" :aria-hidden="chartVisible">
+        <div
+          ref="gridHost"
+          class="pivot-grid-container h-full overflow-hidden gap-1"
+        >
+          <RevoGrid
+            class="overflow-hidden skip-style h-full min-h-0 cell-border"
+            hide-attribution
+            range
+            resize
+            filter
+            :multi-row-header.prop="FINANCIAL_MULTI_ROW_HEADER"
+            :colSize="columnSize"
+            :source="rows"
+            :columns="FINANCIAL_COLUMNS"
+            :pivot.prop="pivot"
+            :pivot-charts.prop="FINANCIAL_PIVOT_CHARTS"
+            :pivot-charts-ui.prop="FINANCIAL_PIVOT_CHARTS_UI"
+            :theme="isDark ? 'darkCompact' : 'compact'"
+            :plugins="plugins"
+            :column-types="columnTypes"
+            readonly
+            @aftergridinit="onGridReady"
+            @pivot-config-update="configUpdate"
+          />
+        </div>
       </div>
     </div>
+    <aside :hidden="!configuratorVisible" class="financial-pivot-sidebar" :aria-label="chartVisible ? 'Chart fields' : 'Pivot fields'">
+      <div :hidden="chartVisible" ref="configuratorMount" class="financial-pivot-sidebar__mount" />
+      <div :hidden="!chartVisible" ref="chartSettingsMount" class="financial-pivot-sidebar__mount" />
+    </aside>
   </div>
 </template>
 
@@ -55,16 +60,10 @@ import type { PivotConfig, PivotChartRef } from '@revolist/pivot';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import { loadContosoData } from './contoso-data';
 import {
-  hasSavedPivotReport,
-  handleReportAction,
-  listSavedPivotReports,
-  loadSavedPivotReport,
-  persistPivotState,
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
 import { exportFinancialCsv, exportFinancialXlsx, financialActionError, mountFinancialChart, printFinancialPivot } from './financial.actions';
-import { createFinancialFieldsDrawer, type FinancialFieldsDrawer } from './financial-fields-drawer';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -94,12 +93,10 @@ const rows = shallowRef(initialRows);
 const loading = ref(!props.rows);
 const loadError = ref('');
 const actionError = ref('');
-let fieldsDrawer: FinancialFieldsDrawer | undefined;
 const configuratorMount = shallowRef<HTMLElement>();
+const chartSettingsMount = shallowRef<HTMLElement>();
 
 onMounted(() => {
-  fieldsDrawer = createFinancialFieldsDrawer(() => { configuratorVisible.value = false; });
-  configuratorMount.value = fieldsDrawer.mountTo;
   disconnectTheme = observeCurrentTheme((value) => {
     isDark.value = value;
   });
@@ -111,7 +108,7 @@ onMounted(() => {
     }).finally(() => { loading.value = false; });
   }
 });
-onBeforeUnmount(() => { disconnectTheme?.(); fieldsDrawer?.destroy(); gridResizeObserver?.disconnect(); });
+onBeforeUnmount(() => { disconnectTheme?.(); gridResizeObserver?.disconnect(); });
 
 const activePreset = ref<FinancialPresetId>(props.initialPreset ?? restoreActivePreset());
 const pivotConfig = shallowRef<PivotConfig>(restorePivotConfig(activePreset.value));
@@ -120,8 +117,6 @@ const expanded = ref(false);
 const chartVisible = ref(false);
 const chartContainer = ref<HTMLElement>();
 let chart: PivotChartRef | undefined;
-const savedAvailable = ref(hasSavedPivotReport());
-const reportsRevision = ref(0);
 const gridHost = ref<HTMLElement>();
 const columnSize = ref(128);
 const hostWidth = ref(0);
@@ -131,13 +126,13 @@ const onGridReady = (event: Event) => {
   gridElement.value = event.target as HTMLRevoGridElement;
 };
 watch([gridElement, chartVisible], async ([grid, visible], _previous, onCleanup) => {
-  if (!grid || !visible || chart || !chartContainer.value) return;
+  if (!grid || !visible || chart || !chartContainer.value || !chartSettingsMount.value) return;
   let active = true;
   onCleanup(() => { active = false; });
   try {
     await grid.componentOnReady();
     if (!active) return;
-    const mounted = await mountFinancialChart(grid, chartContainer.value, props.chartTitle);
+    const mounted = await mountFinancialChart(grid, chartContainer.value, chartSettingsMount.value, props.chartTitle);
     if (active) chart = mounted;
     else mounted.destroy();
   } catch (error) {
@@ -164,34 +159,24 @@ watch(gridHost, (host) => {
 watch(pivotConfig, () => { void nextTick(fitColumns); });
 const columnTypes = ref(FINANCIAL_COLUMN_TYPES);
 const plugins = FINANCIAL_SHOWCASE_PLUGINS;
-const summaryMount = shallowRef<HTMLElement>();
-const summaryOptions = computed(() => ({ mountTo: summaryMount.value }));
 const headerState = computed<FinancialPivotHeaderState>(() => ({
   activePreset: activePreset.value,
   configuratorVisible: configuratorVisible.value,
   expanded: expanded.value,
   chartVisible: chartVisible.value,
-  savedAvailable: savedAvailable.value,
-  savedReports: (reportsRevision.value, listSavedPivotReports()),
 }));
 
 const pivot = computed(() =>
   applyFinancialPivotOptions(
     pivotConfig.value,
     rows.value,
-    configuratorVisible.value,
+    configuratorVisible.value && !chartVisible.value,
     configuratorMount.value,
     hostWidth.value,
   ),
 );
 
-const toggleFields = () => {
-  if (configuratorVisible.value) fieldsDrawer?.hide();
-  else {
-    fieldsDrawer?.show(document.activeElement as HTMLElement);
-    configuratorVisible.value = true;
-  }
-};
+const toggleFields = () => { configuratorVisible.value = !configuratorVisible.value; };
 
 const configUpdate = (event: CustomEvent<PivotConfig>) => {
   pivotConfig.value = event.detail || createFinancialPreset();
@@ -213,35 +198,6 @@ const onAction = async (event: Event) => {
   const action = (event as CustomEvent<FinancialPivotAction>).detail;
   actionError.value = '';
   try {
-    if (action === 'export-json' || typeof action === 'object') {
-      const result = handleReportAction(action, pivotConfig.value, activePreset.value);
-      if (result.restored) {
-        if (gridElement.value) gridElement.value.pivot = undefined;
-        window.setTimeout(() => {
-          pivotConfig.value = result.restored!.config;
-          activePreset.value = result.restored!.preset;
-        });
-      }
-      savedAvailable.value = hasSavedPivotReport();
-      reportsRevision.value++;
-      actionError.value = result.error ?? '';
-      return;
-    }
-    if (action === 'reset') selectPreset(props.initialPreset ?? 'sales');
-    if (action === 'save') {
-      savedAvailable.value = persistPivotState(pivotConfig.value, activePreset.value);
-      if (!savedAvailable.value) actionError.value = 'This browser could not save the report.';
-    }
-    if (action === 'restore') {
-      const saved = loadSavedPivotReport();
-      if (saved) {
-        if (gridElement.value) gridElement.value.pivot = undefined;
-        window.setTimeout(() => {
-          pivotConfig.value = saved.config;
-          activePreset.value = saved.preset;
-        });
-      } else actionError.value = 'The saved report could not be restored.';
-    }
     if (action === 'export' && gridElement.value) await exportFinancialCsv(gridElement.value);
     if (action === 'export-xlsx' && gridElement.value) await exportFinancialXlsx(gridElement.value);
     if (action === 'print' && gridElement.value) await printFinancialPivot(gridElement.value);

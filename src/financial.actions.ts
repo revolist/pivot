@@ -1,3 +1,4 @@
+import { FINANCIAL_PIVOT_CHARTS_UI } from './financial.pivot';
 import { PivotPlugin, mountPivotChart, type PivotChartRef } from '@revolist/pivot';
 export { buildPivotPrintTable } from '@revolist/pivot';
 
@@ -16,7 +17,9 @@ export function financialActionError(error: unknown): string {
   return 'Could not complete this report action. Please try again.';
 }
 
-export async function mountFinancialChart(grid: HTMLRevoGridElement, container: HTMLElement, title = 'Pivot Table Demo'): Promise<PivotChartRef> {
+export async function mountFinancialChart(grid: HTMLRevoGridElement, container: HTMLElement, settingsMountTo: HTMLElement, title = 'Pivot Table Demo'): Promise<PivotChartRef> {
+  const chartUi = { ...FINANCIAL_PIVOT_CHARTS_UI, settingsMountTo };
+  grid.pivotChartsUi = chartUi;
   return mountPivotChart(grid, {
     container,
     controls: 'standard',

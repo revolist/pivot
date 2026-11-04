@@ -73,6 +73,7 @@ financial-pivot-header {
   justify-content: space-between;
   gap: 8px;
   padding-inline: 8px;
+  border-block-end: 1px solid var(--rv-ui-border, #e2e8f0);
 }
 
 .financial-pivot-header__actions {
@@ -105,47 +106,22 @@ financial-pivot-header {
   top: 100%;
   right: 0;
   box-sizing: border-box;
-  width: min(320px, calc(100vw - 24px));
+  width: min(180px, calc(100vw - 24px));
   max-height: min(640px, calc(100dvh - 110px));
   overflow-y: auto;
   display: grid;
   gap: 6px;
-  padding: 14px;
+  padding: 6px;
   border: 1px solid var(--rv-ui-border, #d8e1e8);
   border-radius: 7px;
   background: var(--financial-pivot-expanded-background);
   box-shadow: 0 8px 20px rgb(0 0 0 / 0.12);
 }
-.financial-pivot-header__menu-title { font-size: 14px; line-height: 20px; }
-.financial-pivot-header__menu-intro { margin: 0; color: var(--rv-ui-text-muted, #64748b); font-size: 11px; line-height: 16px; }
-.financial-pivot-header__menu-section {
-  margin-top: 9px;
-  padding-top: 10px;
-  border-top: 1px solid var(--rv-ui-border, #d8e1e8);
-  color: var(--rv-ui-text-muted, #64748b);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
 .financial-pivot-header__menu-items .financial-pivot-header__menu-action {
-  height: auto;
-  min-height: 44px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 2px;
-  padding: 7px 10px;
-  text-align: left;
+  justify-content: flex-start;
+  padding-inline: 10px;
 }
-.financial-pivot-header__menu-action small { color: var(--rv-ui-text-muted, #64748b); font-size: 10px; line-height: 14px; }
-.financial-pivot-header__menu-action:disabled { opacity: 0.5; cursor: not-allowed; }
-.financial-pivot-header__name-label { display: grid; gap: 4px; font-size: 11px; font-weight: 600; }
-.financial-pivot-header__name-label input { width: 100%; box-sizing: border-box; }
-.financial-pivot-header__saved-row { display: flex; gap: 5px; }
-.financial-pivot-header__saved-row .financial-pivot-header__menu-action { flex: 1; min-width: 0; }
-.financial-pivot-header__saved-row > button:last-child { flex: 0 0 auto; }
+
 .financial-pivot-showcase .pivot-grid-container { min-width: 0 !important; }
 .financial-pivot-showcase .financial-pivot-chart {
   height: 290px;
@@ -199,6 +175,10 @@ financial-pivot-header {
   white-space: nowrap;
   cursor: pointer;
 }
+.financial-pivot-header__preset-tab.rv-segmented-switch-item[aria-selected='true'] {
+  border-block-end: 2px solid var(--rv-ui-accent, #2563eb);
+}
+
 .financial-pivot-header__surface {
   display: grid;
   min-width: 0;
@@ -226,10 +206,26 @@ financial-pivot-header {
   min-height: 32px;
   font-family: inherit;
 }
-.financial-pivot-header__button--expand {
+.financial-pivot-header__cog {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.financial-pivot-header__button--expand,
+.financial-pivot-header__button--icon {
   width: 32px;
   padding: 0;
 }
+.financial-pivot-header__button--icon svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .financial-pivot-header__view-switch {
   display: inline-flex;
   flex: 0 0 auto;
@@ -368,5 +364,87 @@ financial-pivot-header {
   .financial-pivot-showcase .pivot-grid-container {
     min-width: 0 !important;
     width: 100%;
+  }
+}
+
+.financial-pivot-showcase {
+  --financial-pivot-sidebar-width: min(340px, 34vw);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.financial-pivot-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.financial-pivot-sidebar {
+  width: var(--financial-pivot-sidebar-width);
+  min-height: 0;
+  overflow: auto;
+  border-inline-start: 1px solid var(--rv-ui-border);
+}
+
+.financial-pivot-sidebar .pivot-config {
+  --pv-cfg-width: 100%;
+  width: 100%;
+}
+
+.financial-pivot-sidebar[hidden],
+.financial-pivot-sidebar__mount[hidden] {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .financial-pivot-showcase {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .financial-pivot-sidebar {
+    width: auto;
+    max-height: 40dvh;
+    border-inline-start: 0;
+    border-block-start: 1px solid var(--rv-ui-border);
+  }
+}
+
+.financial-pivot-sidebar__mount {
+  height: 100%;
+}
+
+// The standalone trial can render Chart settings inline instead of using the mount.
+.financial-pivot-showcase:has(.financial-pivot-sidebar[hidden])
+  .financial-pivot-chart .rv-pivot-chart-dialog__settings {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .financial-pivot-chart .rv-pivot-chart-dialog__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .financial-pivot-chart .rv-pivot-chart-dialog__settings {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    width: var(--financial-pivot-sidebar-width);
+    z-index: 1;
+  }
+}
+
+@media (max-width: 767px) {
+  .financial-pivot-showcase--chart:has(.financial-pivot-chart .rv-pivot-chart-dialog__settings)
+    .financial-pivot-sidebar {
+    display: none;
+  }
+
+  .financial-pivot-showcase:has(.financial-pivot-sidebar[hidden])
+    .financial-pivot-chart .rv-pivot-chart-dialog__body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
   }
 }

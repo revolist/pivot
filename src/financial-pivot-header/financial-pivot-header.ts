@@ -1,5 +1,6 @@
 import { controlAttributes, createControl } from '@revolist/ui';
 import '@revolist/ui/styles.css';
+import { TooltipController } from '@revolist/ui/surfaces';
 import { FINANCIAL_ANALYSIS_PRESET_IDS, FINANCIAL_PRESETS, type FinancialPresetId } from '../financial.pivot';
 
 export const FINANCIAL_PIVOT_HEADER_TAG = 'financial-pivot-header';
@@ -7,22 +8,20 @@ export const FINANCIAL_PIVOT_PRESET_EVENT = 'financial-pivot-preset-select';
 export const FINANCIAL_PIVOT_CONFIGURATOR_EVENT = 'financial-pivot-configurator-toggle';
 export const FINANCIAL_PIVOT_EXPANDED_EVENT = 'financial-pivot-expanded-toggle';
 export const FINANCIAL_PIVOT_ACTION_EVENT = 'financial-pivot-action';
-export type FinancialPivotAction = 'chart' | 'export' | 'save' | 'restore' | 'reset' | 'export-json' | 'import-json' | 'export-xlsx' | 'print'
-  | { kind: 'save-named' | 'restore-named' | 'delete-named'; name: string }
-  | { kind: 'import-json'; json: string };
+export type FinancialPivotAction = 'chart' | 'export' | 'export-xlsx' | 'print';
 
 export interface FinancialPivotHeaderState {
   activePreset: FinancialPresetId | null;
   configuratorVisible: boolean;
   expanded: boolean;
   chartVisible?: boolean;
-  savedAvailable?: boolean;
-  savedReports?: string[];
 }
 
 export type FinancialPivotHeaderElement = HTMLElement & {
   state: FinancialPivotHeaderState;
 };
+
+const CONFIGURATOR_ICON = `<svg class="financial-pivot-header__cog" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc. --><path fill="currentColor" d="M195.1 9.5C198.1-5.3 211.2-16 226.4-16l59.8 0c15.2 0 28.3 10.7 31.3 25.5L332 79.5c14.1 6 27.3 13.7 39.3 22.8l67.8-22.5c14.4-4.8 30.2 1.2 37.8 14.4l29.9 51.8c7.6 13.2 4.9 29.8-6.5 39.9L447 233.3c.9 7.4 1.3 15 1.3 22.7s-.5 15.3-1.3 22.7l53.4 47.5c11.4 10.1 14 26.8 6.5 39.9l-29.9 51.8c-7.6 13.1-23.4 19.2-37.8 14.4l-67.8-22.5c-12.1 9.1-25.3 16.7-39.3 22.8l-14.4 69.9c-3.1 14.9-16.2 25.5-31.3 25.5l-59.8 0c-15.2 0-28.3-10.7-31.3-25.5l-14.4-69.9c-14.1-6-27.2-13.7-39.3-22.8L73.5 432.3c-14.4 4.8-30.2-1.2-37.8-14.4L5.8 366.1c-7.6-13.2-4.9-29.8 6.5-39.9l53.4-47.5c-.9-7.4-1.3-15-1.3-22.7s.5-15.3 1.3-22.7L12.3 185.8c-11.4-10.1-14-26.8-6.5-39.9L35.7 94.1c7.6-13.2 23.4-19.2 37.8-14.4l67.8 22.5c12.1-9.1 25.3-16.7 39.3-22.8L195.1 9.5zM256.3 336a80 80 0 1 0 -.6-160 80 80 0 1 0 .6 160z"/></svg>`;
 
 const DEFAULT_STATE: FinancialPivotHeaderState = {
   activePreset: 'sales', configuratorVisible: true, expanded: false,
@@ -30,7 +29,8 @@ const DEFAULT_STATE: FinancialPivotHeaderState = {
 
 class FinancialPivotHeader extends HTMLElement {
   private currentState = DEFAULT_STATE;
-  private readonly positionReportMenu = () => {
+  private readonly exportTooltip = new TooltipController();
+  private readonly positionExportMenu = () => {
     const report = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu');
     const menu = report?.querySelector<HTMLElement>('.financial-pivot-header__menu-items');
     if (!report?.open || !menu) return;
@@ -49,27 +49,27 @@ class FinancialPivotHeader extends HTMLElement {
     const top = useBelow ? anchor.bottom : anchor.top - Math.min(menu.scrollHeight + 2, height);
     menu.style.top = `${Math.max(margin, Math.min(top, window.innerHeight - height - margin))}px`;
   };
-  private readonly onReportToggle = () => {
+  private readonly onExportToggle = () => {
     const open = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu')?.open;
     // Closed menus do no work while the grid or page scrolls.
-    document.removeEventListener('scroll', this.positionReportOnScroll, true);
-    window.removeEventListener('resize', this.positionReportMenu);
+    document.removeEventListener('scroll', this.positionExportOnScroll, true);
+    window.removeEventListener('resize', this.positionExportMenu);
     if (open) {
-      document.addEventListener('scroll', this.positionReportOnScroll, true);
-      window.addEventListener('resize', this.positionReportMenu);
-      this.positionReportMenu();
+      document.addEventListener('scroll', this.positionExportOnScroll, true);
+      window.addEventListener('resize', this.positionExportMenu);
+      this.positionExportMenu();
     }
   };
-  private readonly positionReportOnScroll = (event: Event) => {
+  private readonly positionExportOnScroll = (event: Event) => {
     // Scrolling the menu itself does not move its anchor.
     if (event.target instanceof Element && event.target.closest('.financial-pivot-header__menu-items')) return;
-    this.positionReportMenu();
+    this.positionExportMenu();
   };
-  private readonly closeReportOnOutsideClick = (event: PointerEvent) => {
+  private readonly closeExportOnOutsideClick = (event: PointerEvent) => {
     const report = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu');
     if (report?.open && !report.contains(event.target as Node)) report.open = false;
   };
-  private readonly closeReportOnEscape = (event: KeyboardEvent) => {
+  private readonly closeExportOnEscape = (event: KeyboardEvent) => {
     const report = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu');
     if (event.key !== 'Escape' || !report?.open) return;
     report.open = false;
@@ -81,15 +81,16 @@ class FinancialPivotHeader extends HTMLElement {
     this.render();
   }
   connectedCallback() {
-    document.addEventListener('pointerdown', this.closeReportOnOutsideClick);
-    document.addEventListener('keydown', this.closeReportOnEscape);
+    document.addEventListener('pointerdown', this.closeExportOnOutsideClick);
+    document.addEventListener('keydown', this.closeExportOnEscape);
     this.render();
   }
   disconnectedCallback() {
-    document.removeEventListener('pointerdown', this.closeReportOnOutsideClick);
-    document.removeEventListener('keydown', this.closeReportOnEscape);
-    document.removeEventListener('scroll', this.positionReportOnScroll, true);
-    window.removeEventListener('resize', this.positionReportMenu);
+    document.removeEventListener('pointerdown', this.closeExportOnOutsideClick);
+    document.removeEventListener('keydown', this.closeExportOnEscape);
+    document.removeEventListener('scroll', this.positionExportOnScroll, true);
+    window.removeEventListener('resize', this.positionExportMenu);
+    this.exportTooltip.destroy();
     this.replaceChildren();
   }
 
@@ -98,8 +99,7 @@ class FinancialPivotHeader extends HTMLElement {
       ? document.activeElement as HTMLElement : null;
     const focusedAction = focusedElement?.dataset.action;
     const focusedPreset = focusedElement?.dataset.value;
-    const focusedReportName = focusedElement?.getAttribute('aria-label') === 'Report name';
-    const reportMenuWasOpen = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu')?.open;
+    const exportMenuWasOpen = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu')?.open;
     const state = this.currentState;
     const root = element('div', 'financial-pivot-header');
     const toolbar = element('div', 'financial-pivot-header__toolbar');
@@ -160,95 +160,47 @@ class FinancialPivotHeader extends HTMLElement {
     const exploreActions = element('div', 'financial-pivot-header__action-group');
     exploreActions.setAttribute('role', 'group');
     exploreActions.setAttribute('aria-label', 'Explore report');
-    exploreActions.append(
-      actionButton('Fields', () => this.emit(FINANCIAL_PIVOT_CONFIGURATOR_EVENT), 'fields', state.configuratorVisible),
-      actionButton('Export CSV', () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export'), 'export'),
-    );
-    const manageActions = element('div', 'financial-pivot-header__action-group financial-pivot-header__action-group--manage');
-    manageActions.setAttribute('role', 'group');
-    manageActions.setAttribute('aria-label', 'Manage report');
-    const reportMenu = element('details', 'financial-pivot-header__menu');
-    reportMenu.open = !!reportMenuWasOpen;
-    const summary = createControl(document, 'summary', { class: 'rv-btn financial-pivot-header__button', children: 'Report' });
-    summary.dataset.action = 'report';
-    summary.setAttribute('aria-label', 'Report actions');
-    reportMenu.append(summary);
+    const exportMenu = element('details', 'financial-pivot-header__menu');
+    exportMenu.open = !!exportMenuWasOpen;
+    const summary = createControl(document, 'summary', { class: 'rv-btn rv-btn-ghost financial-pivot-header__button' });
+    summary.dataset.action = 'export';
+    setIconAction(summary, 'Export', 'M10 3v10m-4-4 4 4 4-4M3 13v4h14v-4');
     const menu = element('div', 'financial-pivot-header__menu-items');
-    menu.append(
-      element('strong', 'financial-pivot-header__menu-title', 'Manage report'),
-      element('p', 'financial-pivot-header__menu-intro', 'Save your layout here or share it as a file.'),
-      element('span', 'financial-pivot-header__menu-section', 'Saved layouts'),
-    );
-    const menuAction = (label: string, description: string, onClick: () => void, action: string) => {
-      const button = actionButton(label, onClick, action);
-      button.classList.add('financial-pivot-header__menu-action');
-      button.append(element('small', '', description));
-      return button;
-    };
-    menu.append(
-      menuAction('Save this report', 'Remember the current layout in this browser.', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'save'); }, 'save'),
-      menuAction('Restore saved report', 'Return to the last saved layout.', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'restore'); }, 'restore'),
-    );
-    (menu.lastElementChild as HTMLButtonElement).disabled = !state.savedAvailable;
-    const nameLabel = element('label', 'financial-pivot-header__name-label', 'Save a named layout');
-    const nameInput = createControl(document, 'input', { type: 'text' });
-    nameInput.type = 'text';
-    nameInput.placeholder = 'Report name';
-    nameInput.maxLength = 80;
-    nameInput.setAttribute('aria-label', 'Report name');
-    nameLabel.append(nameInput);
-    menu.append(nameLabel, menuAction('Save named report', 'Keep another layout alongside your quick save.', () => {
-      const name = nameInput.value.trim();
-      if (name) { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'save-named', name }); }
-      else { nameInput.setCustomValidity('Enter a report name first.'); nameInput.reportValidity(); nameInput.focus(); }
-    }, 'save-named'));
-    nameInput.addEventListener('input', () => nameInput.setCustomValidity(''));
-    if (!(state.savedReports ?? []).length) menu.append(element('p', 'financial-pivot-header__menu-intro', 'No named reports saved yet.'));
-    for (const name of state.savedReports ?? []) {
-      const row = element('div', 'financial-pivot-header__saved-row');
-      row.append(menuAction(`Open ${name}`, 'Load this layout', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'restore-named', name }); }, `open-${name}`));
-      row.append(actionButton(`Delete ${name}`, () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'delete-named', name }), `delete-${name}`));
-      menu.append(row);
+    for (const [label, action] of [
+      ['Export CSV', 'export'],
+      ['Export XLSX', 'export-xlsx'],
+      ['Print / Save PDF', 'print'],
+    ] as const) {
+      const button = actionButton(label, () => {
+        exportMenu.open = false;
+        summary.focus();
+        this.emit(FINANCIAL_PIVOT_ACTION_EVENT, action);
+      }, action === 'export' ? 'export-csv' : action);
+      button.classList.add('rv-btn-ghost', 'financial-pivot-header__menu-action');
+      menu.append(button);
     }
-    menu.append(element('span', 'financial-pivot-header__menu-section', 'Share and export'));
-    menu.append(
-      menuAction('Download report JSON', 'Share the report layout as a file.', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export-json'); }, 'export-json'),
-      menuAction('Export XLSX (visible result)', 'Download the current grid values.', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'export-xlsx'); }, 'export-xlsx'),
-      menuAction('Print / Save PDF (visible result)', 'Open browser printing for the current grid.', () => { reportMenu.open = false; this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'print'); }, 'print'),
-      menuAction('Import report JSON', 'Choose a previously downloaded report file.', () => {
-        const picker = createControl(document, 'input', { type: 'file' });
-        picker.type = 'file'; picker.accept = '.json,application/json';
-        picker.addEventListener('change', async () => {
-          const file = picker.files?.[0];
-          if (file) this.emit(FINANCIAL_PIVOT_ACTION_EVENT, { kind: 'import-json', json: await file.text() });
-        });
-        reportMenu.open = false;
-        picker.click();
-      }, 'import-json'),
-    );
-    reportMenu.append(menu);
-    reportMenu.addEventListener('toggle', this.onReportToggle);
+    exportMenu.append(summary, menu);
+    exportMenu.addEventListener('toggle', this.onExportToggle);
+    const configurator = actionButton('Configurator', () => this.emit(FINANCIAL_PIVOT_CONFIGURATOR_EVENT), 'fields', state.configuratorVisible);
+    configurator.insertAdjacentHTML('afterbegin', CONFIGURATOR_ICON);
+    exploreActions.append(configurator, exportMenu);
     const expandLabel = state.expanded ? 'Exit expanded workspace' : 'Expand workspace';
     const expandButton = actionButton(expandLabel,
       () => this.emit(FINANCIAL_PIVOT_EXPANDED_EVENT), 'expanded', state.expanded);
-    expandButton.classList.add('financial-pivot-header__button--expand');
+    expandButton.classList.add('financial-pivot-header__button--expand', 'rv-btn-ghost');
     expandButton.setAttribute('aria-label', expandLabel);
     expandButton.title = expandLabel;
     expandButton.firstElementChild!.textContent = state.expanded ? '↙' : '↗';
     expandButton.firstElementChild!.setAttribute('aria-hidden', 'true');
-    manageActions.append(reportMenu,
-      actionButton('Reset', () => this.emit(FINANCIAL_PIVOT_ACTION_EVENT, 'reset'), 'reset'),
-      expandButton,
-    );
-    actions.append(viewSwitch, exploreActions, manageActions);
+    actions.append(viewSwitch, exploreActions, expandButton);
     toolbar.append(presetSwitch, actions);
     const surface = element('div', 'financial-pivot-header__surface');
     surface.append(toolbar);
     root.append(surface);
+    this.exportTooltip.bind(summary, 'Export');
     this.replaceChildren(root);
-    this.onReportToggle();
+    this.onExportToggle();
     if (focusedPreset) this.querySelector<HTMLElement>(`[data-value="${focusedPreset}"]`)?.focus();
-    else if (focusedReportName) nameInput.focus();
     else if (focusedAction) this.querySelector<HTMLElement>(`[data-action="${focusedAction}"]`)?.focus();
   }
 
@@ -279,6 +231,19 @@ function actionButton(label: string, onClick: () => void, action?: string, press
   button.append(element('span', '', label));
   button.addEventListener('click', onClick);
   return button;
+}
+
+function setIconAction(control: HTMLElement, label: string, path: string) {
+  control.classList.add('financial-pivot-header__button--icon');
+  control.setAttribute('aria-label', label);
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', '0 0 20 20');
+  icon.setAttribute('aria-hidden', 'true');
+  icon.setAttribute('focusable', 'false');
+  const shape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  shape.setAttribute('d', path);
+  icon.append(shape);
+  control.replaceChildren(icon);
 }
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text?: string) {

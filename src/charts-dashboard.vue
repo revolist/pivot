@@ -120,7 +120,7 @@ import {
   updateDashboardFilter,
 } from './charts-dashboard.model';
 
-const dashboardPlugins = createFinancialShowcasePlugins(false, false);
+const dashboardPlugins = createFinancialShowcasePlugins(false);
 
 // Compact axis ticks keep million-dollar ranges readable; bar tooltips retain exact values.
 const axisNumber = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });

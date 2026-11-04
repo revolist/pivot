@@ -1,7 +1,6 @@
 /** Shared report model for Main and Financial: dimensions, presets, plugin options and column sizing. Framework files only wire UI state and lifecycle. */
 import type { ColumnRegular, DataType, GridPlugin } from '@revolist/revogrid';
 import NumberColumnType from '@revolist/revogrid-column-numeral';
-import * as ProPlugins from '@revolist/revogrid-pro';
 import {
   PivotChartsPlugin,
   PivotChartsUiPlugin,
@@ -142,20 +141,14 @@ export const FINANCIAL_COLUMNS: ColumnRegular[] = FINANCIAL_DIMENSIONS.map((dime
 /** Developer opt-in for inline Pivot header inputs; report filters remain available when off. */
 export const FINANCIAL_HEADER_FILTERS_ENABLED = false;
 
-// The public trial 2.9.5 omits this optional enhancement. Namespace lookup keeps
-// standalone builds compatible while enabling it when the installed API has it.
-const summaryPanelPlugin = Reflect.get(ProPlugins, 'PivotSummaryPanelPlugin') as GridPlugin | undefined;
-
 export function createFinancialShowcasePlugins(
   headerFiltersEnabled = FINANCIAL_HEADER_FILTERS_ENABLED,
-  summaryPanelEnabled = true,
 ): GridPlugin[] {
   return [
     RowSelectPlugin,
     SameValueMergePlugin,
     ContextMenuPlugin,
     PivotPlugin,
-    ...(summaryPanelEnabled && typeof summaryPanelPlugin === 'function' ? [summaryPanelPlugin] : []),
     PivotChartsPlugin,
     PivotChartsUiPlugin,
     AdvanceFilterPlugin,
