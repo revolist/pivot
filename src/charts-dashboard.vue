@@ -10,30 +10,25 @@
     </header>
 
     <div class="dashboard-controls" aria-label="Dashboard controls">
-      <label>Year
-        <select v-rv-control :value="yearControl.value" aria-label="Year" @change="updateFilter('Year', $event)">
-          <option value="">All years</option>
-          <option v-if="yearControl.value === '__custom__'" value="__custom__" disabled>{{ yearControl.label }}</option>
-          <option :value="2025">2025</option>
-          <option :value="2024">2024</option>
-        </select>
-      </label>
-      <label>Brand
-        <select v-rv-control :value="brandControl.value" aria-label="Brand" @change="updateFilter('Brand', $event)">
-          <option v-if="brandControl.value === '__custom__'" value="__custom__" disabled>{{ brandControl.label }}</option>
-          <option value="">All brands</option>
-          <option v-for="name in brands" :key="name" :value="name">{{ name }}</option>
-        </select>
-      </label>
-      <div class="dashboard-compare" role="radiogroup" aria-labelledby="dashboard-compare-label">
-        <span id="dashboard-compare-label" class="dashboard-compare-label">Compare</span>
-        <div class="dashboard-compare-options">
-          <label><input v-rv-control :checked="rowField === 'Country'" type="radio" name="dashboard-rows" value="Country" @change="updateRows('Country')" /> Countries</label>
-          <label><input v-rv-control :checked="rowField === 'Category'" type="radio" name="dashboard-rows" value="Category" @change="updateRows('Category')" /> Categories</label>
-        </div>
+      <div class="dashboard-field">
+        <span>Year</span>
+        <Dropdown class="rv-select" :value="yearControl.value" :source="yearOptions"
+          :config="{ ariaLabel: 'Year', nativeTabNavigation: true, topLayer: true }"
+          @update:model-value="value => updateFilter('Year', String(value))" />
       </div>
-      <button v-rv-control type="button" @click="reset">Reset report</button>
-      <button v-rv-control type="button" aria-haspopup="dialog" :aria-expanded="fieldsVisible" @click="toggleFields">Fields</button>
+      <div class="dashboard-field">
+        <span>Brand</span>
+        <Dropdown class="rv-select" :value="brandControl.value" :source="brandOptions"
+          :config="{ ariaLabel: 'Brand', nativeTabNavigation: true, topLayer: true }"
+          @update:model-value="value => updateFilter('Brand', String(value))" />
+      </div>
+      <div class="dashboard-field">
+        <span class="dashboard-compare-label">Compare</span>
+        <SegmentedSwitch class="dashboard-compare-options" :value="rowField" :options="rowOptions" role="radiogroup" aria-label="Compare"
+          @update:model-value="updateRows" />
+      </div>
+      <Button @click="reset">Reset report</Button>
+      <Button aria-haspopup="dialog" :aria-expanded="fieldsVisible" @click="toggleFields">Fields</Button>
       <div class="dashboard-summary" aria-live="polite">
         <span>{{ filteredRows.length.toLocaleString() }} filtered lines · {{ yearControl.label }} · {{ brandControl.label }}</span>
       </div>
@@ -95,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { vRvControl } from '@revolist/ui/vue-control';
+import { Button, Dropdown, SegmentedSwitch } from '@revolist/ui/vue';
 import '@revolist/ui/styles.css';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import RevoGrid from '@revolist/vue3-datagrid';
@@ -140,6 +135,20 @@ const pivotConfig = shallowRef<PivotConfig>(createChartsConfig());
 const rowField = computed(() => pivotConfig.value.rows.length === 1 ? pivotConfig.value.rows[0] : undefined);
 const yearControl = computed(() => dashboardFilterControl(pivotConfig.value, 'Year', [2024, 2025]));
 const brandControl = computed(() => dashboardFilterControl(pivotConfig.value, 'Brand', brands.value));
+const rowOptions = [
+  { value: 'Country', label: 'Countries' },
+  { value: 'Category', label: 'Categories' },
+];
+const yearOptions = computed(() => filterOptions('All years', ['2025', '2024'], yearControl.value));
+const brandOptions = computed(() => filterOptions('All brands', brands.value, brandControl.value));
+
+function filterOptions(allLabel: string, values: string[], control: { value: string; label: string }) {
+  const options = [{ value: '', label: allLabel }, ...values.map(value => ({ value, label: value }))];
+  return control.value === '__custom__'
+    ? [...options, { value: control.value, label: control.label, disabled: true }]
+    : options;
+}
+
 const pivot = computed<PivotConfig>(() => ({
   ...pivotConfig.value,
   hasConfigurator: fieldsVisible.value,
@@ -218,8 +227,8 @@ function connectGrid() {
   grid?.addEventListener('pivot-chart-updated', onChartUpdated);
 }
 
-function updateFilter(field: 'Year' | 'Brand', event: Event) {
-  pivotConfig.value = updateDashboardFilter(pivotConfig.value, field, (event.target as HTMLSelectElement).value);
+function updateFilter(field: 'Year' | 'Brand', value: string) {
+  pivotConfig.value = updateDashboardFilter(pivotConfig.value, field, value);
 }
 
 function updateRows(field: DashboardRows) {
