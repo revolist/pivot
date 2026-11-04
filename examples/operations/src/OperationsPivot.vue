@@ -10,19 +10,17 @@
     </header>
 
     <section class="controls" aria-label="Ticket scope">
-      <label>Team
-        <select v-rv-control v-model="team">
-          <option value="All">All teams</option>
-          <option v-for="item in TEAMS" :key="item" :value="item">{{ item }}</option>
-        </select>
-      </label>
-      <label>Priority
-        <select v-rv-control v-model="priority">
-          <option value="All">All priorities</option>
-          <option v-for="item in PRIORITIES" :key="item" :value="item">{{ item }}</option>
-        </select>
-      </label>
-      <button v-rv-control type="button" @click="reset">Reset scope</button>
+      <div class="scope-field">
+        <span>Team</span>
+        <Dropdown class="rv-select" :value="team" :source="teamOptions" :config="teamConfig"
+          @update:model-value="value => team = value as TicketTeam | 'All'" />
+      </div>
+      <div class="scope-field">
+        <span>Priority</span>
+        <Dropdown class="rv-select" :value="priority" :source="priorityOptions" :config="priorityConfig"
+          @update:model-value="value => priority = value as TicketPriority | 'All'" />
+      </div>
+      <Button @click="reset">Reset scope</Button>
     </section>
 
     <div class="workspace">
@@ -50,8 +48,8 @@
         <div class="panel-heading">
           <h2 id="detail-heading">Source tickets</h2>
           <div class="detail-actions">
-            <button v-rv-control class="inspect-button rv-btn-primary" type="button" :disabled="!focusedCell" @click="inspectFocusedCell">Inspect focused cell</button>
-            <button v-rv-control v-if="cellMode" type="button" @click="showScope">Show selected scope</button>
+            <Button variant="primary" :disabled="!focusedCell" @click="inspectFocusedCell">Inspect focused cell</Button>
+            <Button v-if="cellMode" @click="showScope">Show selected scope</Button>
           </div>
         </div>
         <p class="detail-scope" aria-live="polite">{{ cellMode ? activeLabel : scopeLabel }}</p>
@@ -78,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { vRvControl } from '@revolist/ui/vue-control';
+import { Button, Dropdown } from '@revolist/ui/vue';
 import '@revolist/ui/styles.css';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import RevoGrid from '@revolist/vue3-datagrid';
@@ -91,6 +89,10 @@ import { currentTheme, observeCurrentTheme } from '../../../src/shared/theme';
 
 const team = ref<TicketTeam | 'All'>('All');
 const priority = ref<TicketPriority | 'All'>('All');
+const teamOptions = [{ value: 'All', label: 'All teams' }, ...TEAMS.map(value => ({ value, label: value }))];
+const priorityOptions = [{ value: 'All', label: 'All priorities' }, ...PRIORITIES.map(value => ({ value, label: value }))];
+const teamConfig = { ariaLabel: 'Team', nativeTabNavigation: true, topLayer: true };
+const priorityConfig = { ariaLabel: 'Priority', nativeTabNavigation: true, topLayer: true };
 const isDark = ref(currentTheme().isDark());
 let disconnectTheme: (() => void) | undefined;
 onMounted(() => { disconnectTheme = observeCurrentTheme(value => { isDark.value = value; }); });
@@ -208,7 +210,7 @@ function onDetailPageChange(event: CustomEvent<PageChangeEvent>) { changePage(ev
 .page-header a { margin-top: 8px; color: var(--ops-accent); font-weight: 650; white-space: nowrap; }
 .eyebrow { color: var(--ops-accent) !important; font-size: 11px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
 .controls { display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; padding: 4px 0; background: transparent; border: 0; }
-.controls label { display: flex; align-items: center; gap: 8px; font-weight: 650; }
+.scope-field { display: flex; align-items: center; gap: 8px; font-weight: 650; }
 .workspace { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 12px; margin-top: 12px; }
 .pivot-panel, .detail-panel { display: flex; flex-direction: column; min-width: 0; overflow: hidden; background: var(--ops-card); border: 1px solid var(--ops-border); border-radius: 11px; box-shadow: 0 2px 10px #15334a0a; }
 .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--ops-border); }
@@ -228,8 +230,8 @@ function onDetailPageChange(event: CustomEvent<PageChangeEvent>) { changePage(ev
   .operations-demo { padding: 12px; }
   .page-header { display: block; }
   .page-header a { display: inline-block; margin-top: 9px; }
-  .controls label { width: 100%; justify-content: space-between; }
-  .controls select { min-width: 158px; }
+  .scope-field { width: 100%; justify-content: space-between; }
+  .scope-field :deep(.rv-select) { min-width: 158px; }
   .panel-heading { align-items: flex-start; flex-wrap: wrap; }
   .detail-actions { width: 100%; }
   .detail-actions button { flex: 1; }

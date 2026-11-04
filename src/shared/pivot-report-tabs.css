@@ -1,0 +1,35 @@
+.pivot-report-tabs.rv-segmented-switch {
+  display: inline-flex;
+  box-sizing: border-box;
+  height: 52px;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.pivot-report-tabs .rv-segmented-switch-item {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 52px;
+  min-height: 52px;
+  align-items: center;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pivot-report-tabs .rv-segmented-switch-item[aria-selected='true'] {
+  border-block-end: 2px solid var(--rv-ui-accent, #2563eb);
+}

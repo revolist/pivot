@@ -218,6 +218,9 @@ importers:
 
   examples/scale:
     dependencies:
+      '@fortawesome/fontawesome-free':
+        specifier: 7.3.1
+        version: 7.3.1
       '@revolist/pivot':
         specifier: npm:@revolist/pivot-trial@3.0.18
         version: '@revolist/pivot-trial@3.0.18'

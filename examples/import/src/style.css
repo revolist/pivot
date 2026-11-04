@@ -60,7 +60,7 @@
 .import-review-controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; padding: 18px 20px; }
 .import-review-controls label { display: flex; flex-direction: column; gap: 6px; color: var(--im-muted); font-size: 11px; font-weight: 550; }
 .import-review-controls input { width: 90px; }
-.import-review-controls > label:first-child select { min-width: 160px; max-width: 240px; }
+.import-review-controls > label:first-child .rv-select { min-width: 160px; max-width: 240px; }
 .import-range { margin-left: auto; align-self: center; font-size: 11px; color: var(--im-muted); }
 .import-range > div { display: flex; gap: 10px; margin-top: 10px; }
 .import-preview-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 20px 12px; }
@@ -71,7 +71,7 @@
 .import-preview-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 11px; }
 .import-preview-table th { background: var(--im-bg); padding: 12px 16px; min-width: 160px; font-weight: 550; border-right: 1px solid var(--im-line); }
 .import-preview-table th > span { display: block; margin-bottom: 8px; }
-.import-preview-table select { width: 100%; min-width: 105px; }
+.import-preview-table .rv-select { width: 100%; min-width: 105px; }
 .import-preview-table td { padding: 11px 16px; max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-right: 1px solid var(--im-line); border-top: 1px solid var(--im-line); }
 .import-preview-caption { padding: 10px 20px; color: var(--im-muted); font-size: 11px; }
 .import-inline-warning { margin: 4px 20px 14px; padding: 10px 12px; border: 1px solid #e7cba3; background: #fff9ef; color: #885b25; border-radius: 7px; font-size: 11px; }
@@ -96,8 +96,6 @@
 .import-report-body { display: flex; flex: 1; min-height: 0; }
 .import-results { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; background: var(--im-surface); }
 .import-report-toolbar { padding: 0 18px; min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--im-line); }
-.import-view-tabs { display: flex; gap: 16px; align-self: stretch; }
-.import-view-tabs button { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
 .import-report-toolbar > div:last-child { display: flex; gap: 6px; }
 .import-report-caption { padding: 20px 22px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .import-report-caption h2 { font-size: 18px; letter-spacing: -.3px; font-weight: 600; line-height: 1.3; }
@@ -147,7 +145,7 @@
   .import-detected { display: none; }
   .import-review-controls { padding: 14px; gap: 14px 12px; }
   .import-review-controls > label:first-child { flex: 1; }
-  .import-review-controls > label:first-child select { min-width: 120px; max-width: 170px; }
+  .import-review-controls > label:first-child .rv-select { min-width: 120px; max-width: 170px; }
   .import-range { margin-left: 0; }
   .import-preview-heading { padding: 5px 14px 12px; }
   .import-preview-heading > span { display: none; }
@@ -160,7 +158,7 @@
   .import-report-actions { width: 100%; }
   .import-report-actions button { flex: 1; }
   .import-report-toolbar { flex-wrap: wrap; padding: 0 12px 10px; gap: 3px; }
-  .import-view-tabs { width: 100%; gap: 24px; }
+  .import-view-tabs { max-width: 100%; }
   .import-report-toolbar > div:last-child { width: 100%; justify-content: flex-end; }
   .import-report-caption { padding: 18px 14px; }
   .import-report-caption h2 { font-size: 16px; }

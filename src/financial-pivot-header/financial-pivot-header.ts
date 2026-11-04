@@ -1,5 +1,6 @@
 import { controlAttributes, createControl } from '@revolist/ui';
 import '@revolist/ui/styles.css';
+import '../shared/pivot-report-tabs.css';
 import { TooltipController } from '@revolist/ui/surfaces';
 import { FINANCIAL_ANALYSIS_PRESET_IDS, FINANCIAL_PRESETS, type FinancialPresetId } from '../financial.pivot';
 
@@ -103,7 +104,7 @@ class FinancialPivotHeader extends HTMLElement {
     const state = this.currentState;
     const root = element('div', 'financial-pivot-header');
     const toolbar = element('div', 'financial-pivot-header__toolbar');
-    const presetSwitch = element('div', 'financial-pivot-header__preset-switch rv-segmented-switch');
+    const presetSwitch = element('div', 'financial-pivot-header__preset-switch rv-segmented-switch pivot-report-tabs');
     presetSwitch.setAttribute('role', 'tablist');
     presetSwitch.setAttribute('aria-label', 'Financial report presets');
     const analysisMode = state.activePreset && FINANCIAL_ANALYSIS_PRESET_IDS.includes(state.activePreset);
