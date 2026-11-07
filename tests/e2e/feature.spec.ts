@@ -220,7 +220,7 @@ test('drill-through returns only the selected month, country and category sales 
   await expect(page.getByText('January', { exact: true })).toBeVisible();
   const audio = page.getByRole('row').filter({ hasText: 'Audio' }).first();
   await audio.getByRole('gridcell', { name: '$691.13' }).first().click({ button: 'right' });
-  await page.getByRole('menuitem', { name: 'Drill Through…' }).click();
+  await page.getByRole('menuitem', { name: 'Drill Through', exact: true }).click();
   const details = page.getByRole('dialog');
   await expect(details).toContainText('3291034:0');
   await expect(details).toContainText('3299003:3');

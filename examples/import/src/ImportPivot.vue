@@ -61,6 +61,7 @@
             <RevoGrid v-if="pivot" :key="reportVersion" class="import-result-grid cell-border" hide-attribution readonly resize :source="reportRows" :columns="reportColumns" :plugins="plugins" :pivot.prop="pivot" :pivot-charts.prop="chartConfig" :theme="isDark ? 'darkCompact' : 'compact'" :row-size="38" :col-size="165" stretch @aftergridinit="onGridReady" @pivot-config-update="onConfigUpdate" />
           </div>
           <RevoGrid v-if="activeView === 'source'" class="import-source-grid cell-border" hide-attribution readonly resize :source="reportRows" :columns="sourceColumns" :theme="isDark ? 'darkCompact' : 'compact'" :row-size="38" />
+          <div v-show="activeView === 'chart'" ref="chartSettingsHost" />
           <div v-show="activeView === 'chart'" ref="chartHost" class="import-chart" aria-label="Pivot chart" />
           <div class="import-report-status"><span><i></i> All {{ reportRows.length.toLocaleString() }} selected rows included</span><span>Browser only · no data saved</span></div>
         </section>
@@ -159,8 +160,8 @@ const acceptedName = ref(''), acceptedSheet = ref('');
 const configuratorHost = ref<HTMLElement>(), fieldsAside = ref<HTMLElement>();
 const grid = shallowRef<HTMLRevoGridElement>();
 const reportVersion = ref(0), fieldsOpen = ref(false);
-const views = [{ value: 'pivot', label: 'Pivot' }, { value: 'source', label: 'Source data' }, { value: 'chart', label: 'Chart' }] as const;
-type View = typeof views[number]['value'];
+type View = 'pivot' | 'source' | 'chart';
+const views: { value: View; label: string }[] = [{ value: 'pivot', label: 'Pivot' }, { value: 'source', label: 'Source data' }, { value: 'chart', label: 'Chart' }];
 const activeView = ref<View>('pivot');
 const plugins = [PivotPlugin, PivotChartsPlugin, PivotChartsUiPlugin] as GridPlugin[];
 const chartConfig = { renderer: createPivotChartsRenderer({ fontFamily: 'inherit' }), defaultChartType: 'groupedColumn' as const };
@@ -192,6 +193,7 @@ function reviewData() { disposeChart(); pivot.value = undefined; grid.value = un
 function replaceFile() { cancelImport(); disposeChart(); pivot.value = undefined; grid.value = undefined; workbook.value = undefined; reportRows.value = []; acceptedFields.value = []; step.value = 1; error.value = ''; fieldsOpen.value = false; focusHeading('import-title'); }
 function resetReport() { disposeChart(); activeView.value = 'pivot'; pivot.value = createImportPivot(acceptedFields.value, false, configuratorHost.value); reportVersion.value++; }
 const chartHost = ref<HTMLElement>();
+const chartSettingsHost = ref<HTMLElement>();
 let chart: PivotChartRef | undefined;
 let chartGeneration = 0;
 function disposeChart() { chartGeneration++; chart?.destroy(); chart = undefined; }
@@ -201,10 +203,10 @@ async function changeView(view: View) {
   if (!grid.value || !pivot.value?.values.length) { error.value = 'Add a field to Values before opening a chart.'; return; }
   activeView.value = view;
   await nextTick();
-  if (chart || !chartHost.value) return;
+  if (chart || !chartHost.value || !chartSettingsHost.value) return;
   const generation = ++chartGeneration;
   try {
-    const result = await mountFinancialChart(grid.value, chartHost.value, reportTitle.value);
+    const result = await mountFinancialChart(grid.value, chartHost.value, chartSettingsHost.value, reportTitle.value);
     if (generation !== chartGeneration) result.destroy(); else chart = result;
   } catch (reason) { if (generation === chartGeneration) { error.value = financialActionError(reason); activeView.value = 'pivot'; } }
 }

@@ -11,11 +11,11 @@
   },
   "dependencies": {
     "@revolist/revogrid": "4.31.3",
-    "@revolist/pivot": "npm:@revolist/pivot-trial@3.0.18",
-    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@3.0.18",
+    "@revolist/pivot": "npm:@revolist/pivot-trial@4.0.1",
+    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@4.0.1",
     "@revolist/vue3-datagrid": "4.31.3",
     "vue": "^3.5.21",
-    "@revolist/ui": "file:../../vendor/revolist-ui-3.0.14.tgz",
+    "@revolist/ui": "4.0.1",
     "preact": "10.29.1"
   },
   "devDependencies": {

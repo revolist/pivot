@@ -1,7 +1,8 @@
 import questionIcon from '@fortawesome/fontawesome-free/svgs/solid/question.svg?raw';
 import { applyControlPresentation } from '@revolist/ui';
 import { IconButton, SegmentedSwitch } from '@revolist/ui/preact';
-import { h, render } from 'preact';
+import { h } from 'preact';
+import { renderPreactInto } from '@revolist/ui/preact-mount';
 import '@revolist/ui/styles.css';
 import { currentTheme, observeCurrentTheme } from '../../../src/shared/theme';
 /** Client workload UI and measurements. Data generation and Pivot configuration are separate so you can replace either without rewriting the view. */
@@ -62,7 +63,7 @@ app.innerHTML = `
 applyControlPresentation(app);
 const metricHelpHosts = metrics.map(({ id, helpLabel, description }) => {
   const host = app.querySelector<HTMLElement>(`[data-metric-help="${id}"]`)!;
-  render(h(IconButton, { label: helpLabel, title: description, icon: questionIcon }), host);
+  renderPreactInto(host, h(IconButton, { label: helpLabel, title: description, icon: questionIcon }));
   return host;
 });
 
@@ -92,14 +93,14 @@ const workloadOptions = [
   { value: 1_000_000, label: '1M rows · opt in', title: 'Opt in: generation and Pivot processing may use substantial memory' },
 ];
 function renderWorkloads(count: number, disabled: boolean) {
-  render(h(SegmentedSwitch<number>, {
+  renderPreactInto(workloadHost, h(SegmentedSwitch<number>, {
     className: 'scale-workloads pivot-report-tabs',
     ariaLabel: 'Client workload',
     options: workloadOptions,
     value: count,
     disabled,
     onChange: value => void runClient(value),
-  }), workloadHost);
+  }));
 }
 
 const nextPaint = () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
@@ -214,8 +215,8 @@ void runClient(10_000);
   return () => {
     stopTheme();
     ++runToken;
-    render(null, workloadHost);
-    for (const host of metricHelpHosts) render(null, host);
+    renderPreactInto(workloadHost, null);
+    for (const host of metricHelpHosts) renderPreactInto(host, null);
     grid?.remove();
     app.replaceChildren();
   };

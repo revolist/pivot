@@ -73,9 +73,14 @@ class FinancialPivotHeader extends HTMLElement {
   private readonly closeExportOnEscape = (event: KeyboardEvent) => {
     const report = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu');
     if (event.key !== 'Escape' || !report?.open) return;
+    this.closeExportMenu();
+  };
+  private closeExportMenu() {
+    const report = this.querySelector<HTMLDetailsElement>('.financial-pivot-header__menu');
+    if (!report?.open) return;
     report.open = false;
     report.querySelector<HTMLElement>('summary')?.focus();
-  };
+  }
   get state() { return this.currentState; }
   set state(value: FinancialPivotHeaderState) {
     this.currentState = value;
@@ -198,7 +203,7 @@ class FinancialPivotHeader extends HTMLElement {
     const surface = element('div', 'financial-pivot-header__surface');
     surface.append(toolbar);
     root.append(surface);
-    this.exportTooltip.bind(summary, 'Export');
+    this.exportTooltip.bind(summary, 'Export', { onEscape: () => this.closeExportMenu() });
     this.replaceChildren(root);
     this.onExportToggle();
     if (focusedPreset) this.querySelector<HTMLElement>(`[data-value="${focusedPreset}"]`)?.focus();
