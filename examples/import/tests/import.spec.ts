@@ -24,8 +24,8 @@ async function assertExport(page: import('@playwright/test').Page, expected = ex
 
 test('CSV upload preserves IDs, includes rows beyond preview, edits layout, charts and exports exact totals', async ({page}) => {
   await upload(page,'sales.csv',Buffer.from(csv));
-  await expect(page.getByLabel('Type for Order ID')).toHaveValue('text');
-  await expect(page.getByLabel('Type for Revenue')).toHaveValue('number');
+  await expect(page.getByLabel('Type for Order ID')).toHaveAttribute('data-value', 'text');
+  await expect(page.getByLabel('Type for Revenue')).toHaveAttribute('data-value', 'number');
   await expect(page.getByText('Your pivot will include all 10 selected rows.',{exact:false})).toBeVisible();
   await page.getByRole('button',{name:'Create pivot',exact:true}).click();
   await expect(page.getByText('All 10 selected rows included')).toBeVisible();
@@ -40,16 +40,17 @@ test('CSV upload preserves IDs, includes rows beyond preview, edits layout, char
   await expect(page.locator('.import-chart svg').first()).toBeVisible();
   await page.getByRole('tab',{name:'Pivot',exact:false}).click();
   await page.getByRole('button',{name:'Review data',exact:true}).click();
-  await expect(page.getByLabel('Type for Order ID')).toHaveValue('text');
+  await expect(page.getByLabel('Type for Order ID')).toHaveAttribute('data-value', 'text');
   await page.getByRole('button',{name:'Choose another file',exact:false}).click();
   await expect(page.getByRole('heading',{name:'Drop your file here'})).toBeVisible();
 });
 
 for (const date1904 of [false,true]) test(`real XLSX: sheet/header/date detection and cached formula totals (${date1904 ? '1904' : '1900'} dates)`, async ({page}) => {
   await upload(page,'workbook.xlsx',workbookFixture(date1904));
-  await page.getByLabel('Worksheet',{exact:true}).selectOption({label:'Orders'});
+  await page.getByRole('combobox', { name: 'Worksheet', exact: true }).click();
+  await page.getByRole('option', { name: 'Orders', exact: true }).click();
   await expect(page.getByLabel('Header row',{exact:true})).toHaveValue('3');
-  await expect(page.getByLabel('Type for Date',{exact:true})).toHaveValue('date');
+  await expect(page.getByLabel('Type for Date',{exact:true})).toHaveAttribute('data-value', 'date');
   await expect(page.locator('.import-preview-table')).toContainText('2026-01-01');
   await page.getByRole('button',{name:'Create pivot',exact:true}).click();
   await expect(page.locator('.import-result-grid')).toContainText('EU');
@@ -58,18 +59,24 @@ for (const date1904 of [false,true]) test(`real XLSX: sheet/header/date detectio
 
 test('mixed columns block invalid conversions; ranges and decimal overrides are applied', async ({page}) => {
   await upload(page,'mixed.csv',Buffer.from('Region;Amount\nEU;10,5\nUS;not-a-number\nEU;2,25'));
-  await page.getByLabel('Decimal separator').selectOption(',');
-  await page.getByLabel('Type for Amount').selectOption('number');
+  await page.getByRole('combobox', { name: 'Decimal separator', exact: true }).click();
+  await page.getByRole('option', { name: 'Comma (1234,56)', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Type for Amount', exact: true }).click();
+  await page.getByRole('option', { name: '# Number', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Amount: 1 value');
   await expect(page.getByRole('button',{name:'Create pivot',exact:true})).toBeDisabled();
-  await page.getByLabel('Type for Amount').selectOption('text');
+  await page.getByRole('combobox', { name: 'Type for Amount', exact: true }).click();
+  await page.getByRole('option', { name: 'Aa Text', exact: true }).click();
   await expect(page.getByRole('button',{name:'Create pivot',exact:true})).toBeEnabled();
   await page.getByText('Data range',{exact:true}).click();
   await page.getByLabel('Last data row').fill('2');
-  await page.getByLabel('Decimal separator').selectOption('.');
-  await page.getByLabel('Decimal separator').selectOption(',');
+  await page.getByRole('combobox', { name: 'Decimal separator', exact: true }).click();
+  await page.getByRole('option', { name: 'Point (1234.56)', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Decimal separator', exact: true }).click();
+  await page.getByRole('option', { name: 'Comma (1234,56)', exact: true }).click();
   await expect(page.getByLabel('Last data row')).toHaveValue('2');
-  await page.getByLabel('Type for Amount').selectOption('number');
+  await page.getByRole('combobox', { name: 'Type for Amount', exact: true }).click();
+  await page.getByRole('option', { name: '# Number', exact: true }).click();
   await page.getByRole('button',{name:'Create pivot',exact:true}).click();
   await assertExport(page,10.5);
 });

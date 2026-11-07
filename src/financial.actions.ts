@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import { FINANCIAL_PIVOT_CHARTS_UI } from './financial.pivot';
 import { PivotPlugin, mountPivotChart, type PivotChartRef, type PivotChartsUiConfig } from '@revolist/pivot';
 export { buildPivotPrintTable } from '@revolist/pivot';
 
@@ -34,19 +35,14 @@ async function getPivotPlugin(grid: HTMLRevoGridElement) {
 /** Explain chart safety limits without dropping data or leaving an empty chart view. */
 export function financialActionError(error: unknown): string {
   if (error && typeof error === 'object' && 'code' in error && error.code === 'LIMIT_EXCEEDED') {
-    return 'This report is too detailed to chart. Use Config to filter the data or choose a grouped report, then open Chart again.';
+    return 'This report is too detailed to chart. Use Fields to filter the data or choose a grouped report, then open Chart again.';
   }
   return 'Could not complete this report action. Please try again.';
 }
 
-/** Mount chart settings in the same application-owned Fields drawer as Pivot. */
-export async function mountFinancialChart(
-  grid: HTMLRevoGridElement,
-  container: HTMLElement,
-  title = 'Pivot Table Demo',
-  settingsMountTo?: HTMLElement,
-): Promise<PivotChartRef> {
-  grid.pivotChartsUi = financialChartSettingsUi(grid.pivotChartsUi, settingsMountTo);
+export async function mountFinancialChart(grid: HTMLRevoGridElement, container: HTMLElement, settingsMountTo: HTMLElement, title = 'Pivot Table Demo'): Promise<PivotChartRef> {
+  const chartUi = { ...FINANCIAL_PIVOT_CHARTS_UI, settingsMountTo };
+  grid.pivotChartsUi = chartUi;
   return mountPivotChart(grid, {
     container,
     controls: 'standard',

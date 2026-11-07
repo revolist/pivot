@@ -18,8 +18,8 @@ test('dashboard controls align and default Pivot columns fill the report', async
     const quarter = headerCells.find(({ text }) => text === 'Q1')!;
     const total = headerCells.find(({ text }) => text === 'Grand Total')!;
     return { controls: {
-      yearLabel: box('.dashboard-controls > label:first-child'),
-      yearSelect: box('.dashboard-controls select[aria-label="Year"]'),
+      yearLabel: box('.dashboard-field:first-child > span'),
+      yearSelect: box('.dashboard-controls [role="combobox"][aria-label="Year"]'),
       compare: box('.dashboard-compare-options'),
       compareLabel: box('.dashboard-compare-label'),
     }, grid: { host: box('.dashboard-grid'), country: country.box, quarter: quarter.box, total: total.box } };
@@ -33,7 +33,7 @@ test('dashboard controls align and default Pivot columns fill the report', async
   expect(geometry.grid.country.width).toBeGreaterThanOrEqual(200);
   await expect(page.locator('.dashboard-grid .rgCell').filter({ hasText: 'United Kingdom' }).first()).toBeVisible();
   expect(geometry.grid.host!.right - geometry.grid.total.right).toBeLessThanOrEqual(8);
-  await page.getByRole('radio', { name: 'Categories' }).check();
+  await page.getByRole('radio', { name: 'Categories' }).click();
   await expect(page.locator('.dashboard-grid .rgHeaderCell').filter({ hasText: 'Grand Total' }).first()).toBeVisible();
   await expect.poll(() => page.evaluate(() => {
     const host = document.querySelector<HTMLElement>('.dashboard-grid')!;

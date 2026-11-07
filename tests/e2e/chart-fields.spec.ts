@@ -3,7 +3,7 @@ import { resolvePivotVersion } from '../../scripts/pivot-version.mjs';
 
 const drawerSupported = Number.parseInt(resolvePivotVersion(import.meta.url), 10) >= 4;
 
-test('Fields toggles the chart inspector inside the Fields drawer', async ({ page }) => {
+test('Fields toggles the chart inspector inside the Fields sidebar', async ({ page }) => {
   test.skip(!drawerSupported, 'External settings mounting requires Pivot 4+.');
   await page.goto('/');
   const header = page.locator('financial-pivot-header');
@@ -12,8 +12,8 @@ test('Fields toggles the chart inspector inside the Fields drawer', async ({ pag
   const settings = page.locator('.rv-pivot-chart-dialog__settings');
   await expect(page.locator('[data-pivot-chart-container]').first()).toBeVisible();
   await expect(settings).toBeHidden();
-  await header.getByRole('button', { name: 'Config', exact: true }).click();
-  const drawer = page.getByRole('dialog', { name: 'Chart settings' });
+  await header.getByRole('button', { name: 'Configurator', exact: true }).click();
+  const drawer = page.locator('.financial-pivot-sidebar');
   await expect(drawer).toBeVisible();
   await expect(drawer.locator('.rv-pivot-chart-dialog__settings')).toBeVisible();
   await expect(drawer.locator('.rv-pivot-chart-settings-host')).toHaveCSS('font-size', '13px');
@@ -23,9 +23,9 @@ test('Fields toggles the chart inspector inside the Fields drawer', async ({ pag
     const style = getComputedStyle(element);
     const switchElement = element.closest<HTMLElement>('[role="tablist"]')!;
     const switchCss = getComputedStyle(switchElement);
-    const drawerBox = element.closest('[role="dialog"]')!.getBoundingClientRect();
+    const drawerBox = element.closest('aside')!.getBoundingClientRect();
     return {
-      font: style.font, color: style.color, background: style.backgroundColor,
+      font: [style.fontWeight, style.fontSize, style.lineHeight, style.fontFamily.split(',')[0].trim()].join(' '), color: style.color, background: style.backgroundColor,
       radius: style.borderRadius, padding: style.padding, height: element.getBoundingClientRect().height,
       switchRadius: switchCss.borderRadius, switchPadding: switchCss.padding,
       switchHeight: switchElement.getBoundingClientRect().height,
@@ -46,19 +46,25 @@ test('Fields toggles the chart inspector inside the Fields drawer', async ({ pag
   await drawer.getByRole('tab', { name: 'Display', exact: true }).click();
   await drawer.getByLabel('Title', { exact: true }).fill('Drawer chart title');
   await expect(page.locator('.financial-pivot-chart .rv-pivot-chart-dialog__settings')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Close fields', exact: true }).click();
+  await header.getByRole('button', { name: 'Configurator', exact: true }).click();
   await expect(settings).toBeHidden();
-  await header.getByRole('button', { name: 'Config', exact: true }).click();
+  await header.getByRole('button', { name: 'Configurator', exact: true }).click();
   await expect(drawer.getByLabel('Title', { exact: true })).toHaveValue('Drawer chart title');
   await page.keyboard.press('Escape');
   await expect(drawer).toBeHidden();
   await header.getByRole('button', { name: 'Pivot', exact: true }).click();
-  await header.getByRole('button', { name: 'Config', exact: true }).click();
-  const pivotDrawer = page.getByRole('dialog', { name: 'Pivot fields' });
+  await header.getByRole('button', { name: 'Configurator', exact: true }).click();
+  const pivotDrawer = page.getByRole('complementary', { name: 'Pivot fields' });
   await expect(pivotDrawer).toBeVisible();
   const pivotSwitchStyle = await pivotDrawer.getByRole('tab', { name: 'Layout', exact: true }).evaluate(switchStyle);
-  expect(chartSwitchStyle).toEqual(pivotSwitchStyle);
-  expect(chartInactiveStyle).toEqual(await pivotDrawer.getByRole('tab', { name: 'Display', exact: true }).evaluate(switchStyle));
+  // The inline chart settings add their own 1px panel border; control geometry stays shared.
+  expect(Math.abs(chartSwitchStyle.inset - pivotSwitchStyle.inset)).toBeLessThanOrEqual(1);
+  const withoutPanelInset = ({ inset, ...style }: typeof chartSwitchStyle) => style;
+  expect(withoutPanelInset(chartSwitchStyle)).toEqual(withoutPanelInset(pivotSwitchStyle));
+  await page.mouse.move(0, 0);
+  const pivotInactive = pivotDrawer.getByRole('tab', { name: 'Display', exact: true });
+  await expect(pivotInactive).toHaveCSS('background-color', chartInactiveStyle.background);
+  expect(withoutPanelInset(chartInactiveStyle)).toEqual(withoutPanelInset(await pivotInactive.evaluate(switchStyle)));
 });
 
 test('Config toggles inline chart settings on Pivot 3 without opening an empty drawer', async ({ page }) => {
@@ -68,7 +74,7 @@ test('Config toggles inline chart settings on Pivot 3 without opening an empty d
   await expect(header).toBeVisible({ timeout: 30000 });
   await header.getByRole('button', { name: 'Chart', exact: true }).click();
   await expect(page.locator('[data-pivot-chart-container]').first()).toBeVisible();
-  const config = header.getByRole('button', { name: 'Config', exact: true });
+  const config = header.getByRole('button', { name: 'Configurator', exact: true });
   await config.click();
   const settings = page.locator('.financial-pivot-chart .rv-pivot-chart-dialog__settings');
   await expect(settings).toBeVisible();
@@ -84,7 +90,7 @@ test('Config toggles inline chart settings on Pivot 3 without opening an empty d
   await expect(settings.getByLabel('Title', { exact: true })).toHaveValue('Inline chart settings');
   await header.getByRole('button', { name: 'Pivot', exact: true }).click();
   await config.click();
-  await page.getByRole('button', { name: 'Close fields', exact: true }).click();
+  await header.getByRole('button', { name: 'Configurator', exact: true }).click();
   await header.getByRole('button', { name: 'Chart', exact: true }).click();
   await expect(settings).toBeHidden();
   await config.click();

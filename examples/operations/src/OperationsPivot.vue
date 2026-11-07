@@ -10,19 +10,17 @@
     </header>
 
     <section class="controls" aria-label="Ticket scope">
-      <label>Team
-        <select v-model="team">
-          <option value="All">All teams</option>
-          <option v-for="item in TEAMS" :key="item" :value="item">{{ item }}</option>
-        </select>
-      </label>
-      <label>Priority
-        <select v-model="priority">
-          <option value="All">All priorities</option>
-          <option v-for="item in PRIORITIES" :key="item" :value="item">{{ item }}</option>
-        </select>
-      </label>
-      <button type="button" @click="reset">Reset scope</button>
+      <div class="scope-field">
+        <span>Team</span>
+        <Dropdown class="rv-select" :value="team" :source="teamOptions" :config="teamConfig"
+          @update:model-value="value => team = value as TicketTeam | 'All'" />
+      </div>
+      <div class="scope-field">
+        <span>Priority</span>
+        <Dropdown class="rv-select" :value="priority" :source="priorityOptions" :config="priorityConfig"
+          @update:model-value="value => priority = value as TicketPriority | 'All'" />
+      </div>
+      <Button @click="reset">Reset scope</Button>
     </section>
 
     <div class="workspace">
@@ -50,8 +48,8 @@
         <div class="panel-heading">
           <h2 id="detail-heading">Source tickets</h2>
           <div class="detail-actions">
-            <button class="inspect-button" type="button" :disabled="!focusedCell" @click="inspectFocusedCell">Inspect focused cell</button>
-            <button v-if="cellMode" type="button" @click="showScope">Show selected scope</button>
+            <Button variant="primary" :disabled="!focusedCell" @click="inspectFocusedCell">Inspect focused cell</Button>
+            <Button v-if="cellMode" @click="showScope">Show selected scope</Button>
           </div>
         </div>
         <p class="detail-scope" aria-live="polite">{{ cellMode ? activeLabel : scopeLabel }}</p>
@@ -78,6 +76,8 @@
 </template>
 
 <script setup lang="ts">
+import { Button, Dropdown } from '@revolist/ui/vue';
+import '@revolist/ui/styles.css';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import RevoGrid from '@revolist/vue3-datagrid';
 import type { ColumnRegular, FocusAfterRenderEvent, GridPlugin } from '@revolist/revogrid';
@@ -89,6 +89,10 @@ import { currentTheme, observeCurrentTheme } from '../../../src/shared/theme';
 
 const team = ref<TicketTeam | 'All'>('All');
 const priority = ref<TicketPriority | 'All'>('All');
+const teamOptions = [{ value: 'All', label: 'All teams' }, ...TEAMS.map(value => ({ value, label: value }))];
+const priorityOptions = [{ value: 'All', label: 'All priorities' }, ...PRIORITIES.map(value => ({ value, label: value }))];
+const teamConfig = { ariaLabel: 'Team', nativeTabNavigation: true, topLayer: true };
+const priorityConfig = { ariaLabel: 'Priority', nativeTabNavigation: true, topLayer: true };
 const isDark = ref(currentTheme().isDark());
 let disconnectTheme: (() => void) | undefined;
 onMounted(() => { disconnectTheme = observeCurrentTheme(value => { isDark.value = value; }); });
@@ -97,13 +101,13 @@ const page = ref(0);
 const pageSize = 15;
 const detailPlugins: GridPlugin[] = [PaginationPlugin];
 const detailColumns: ColumnRegular[] = [
-  { prop: 'id', name: 'ID', size: 130 },
-  { prop: 'team', name: 'Team', size: 125 },
-  { prop: 'priority', name: 'Priority', size: 100 },
-  { prop: 'category', name: 'Category', size: 130 },
-  { prop: 'opened', name: 'Opened', size: 115 },
-  { prop: 'resolution', name: 'Resolution', size: 105 },
-  { prop: 'sla', name: 'SLA', size: 95 },
+ { prop: 'id', name: 'ID', size: 130 },
+ { prop: 'team', name: 'Team', size: 125 },
+ { prop: 'priority', name: 'Priority', size: 100 },
+ { prop: 'category', name: 'Category', size: 130 },
+ { prop: 'opened', name: 'Opened', size: 115 },
+ { prop: 'resolution', name: 'Resolution', size: 105 },
+ { prop: 'sla', name: 'SLA', size: 95 },
 ];
 const focusedCell = ref<PivotDrilldownCellRef | null>(null);
 const activeCell = ref<PivotDrilldownCellRef | null>(null);
@@ -206,10 +210,7 @@ function onDetailPageChange(event: CustomEvent<PageChangeEvent>) { changePage(ev
 .page-header a { margin-top: 8px; color: var(--ops-accent); font-weight: 650; white-space: nowrap; }
 .eyebrow { color: var(--ops-accent) !important; font-size: 11px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
 .controls { display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; padding: 4px 0; background: transparent; border: 0; }
-.controls label { display: flex; align-items: center; gap: 8px; font-weight: 650; }
-.controls select, .controls button, .detail-actions button { min-height: 34px; padding: 5px 10px; color: var(--ops-ink); background: var(--ops-input); border: 1px solid var(--ops-border); border-radius: 7px; font: inherit; }
-.controls button, .detail-actions button { cursor: pointer; }
-.controls :is(select, button):focus-visible, .detail-actions button:focus-visible { outline: 2px solid var(--ops-accent); outline-offset: 2px; }
+.scope-field { display: flex; align-items: center; gap: 8px; font-weight: 650; }
 .workspace { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 12px; margin-top: 12px; }
 .pivot-panel, .detail-panel { display: flex; flex-direction: column; min-width: 0; overflow: hidden; background: var(--ops-card); border: 1px solid var(--ops-border); border-radius: 11px; box-shadow: 0 2px 10px #15334a0a; }
 .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--ops-border); }
@@ -218,8 +219,6 @@ function onDetailPageChange(event: CustomEvent<PageChangeEvent>) { changePage(ev
 .pivot-panel > :is(.pivot-grid, .pivot-plugin) { display: flex; flex: 1; min-height: 470px; overflow: auto; }
 .pivot-panel revo-grid { flex: 1; min-width: 620px; min-height: 0; }
 .detail-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
-.detail-actions .inspect-button { color: var(--rv-ui-accent-fg, #fff); background: var(--ops-accent); border-color: var(--ops-accent); font-weight: 650; }
-.detail-actions button:disabled { opacity: .48; cursor: not-allowed; }
 .detail-scope { margin: 8px 14px 0; color: var(--ops-ink); font-size: 12px; font-weight: 700; }
 .detail-description, .detail-page-info, .provenance { color: var(--ops-muted); font-size: 12px; }
 .detail-description { margin: 4px 14px 10px; }
@@ -231,8 +230,8 @@ function onDetailPageChange(event: CustomEvent<PageChangeEvent>) { changePage(ev
   .operations-demo { padding: 12px; }
   .page-header { display: block; }
   .page-header a { display: inline-block; margin-top: 9px; }
-  .controls label { width: 100%; justify-content: space-between; }
-  .controls select { min-width: 158px; }
+  .scope-field { width: 100%; justify-content: space-between; }
+  .scope-field :deep(.rv-select) { min-width: 158px; }
   .panel-heading { align-items: flex-start; flex-wrap: wrap; }
   .detail-actions { width: 100%; }
   .detail-actions button { flex: 1; }

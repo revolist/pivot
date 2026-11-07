@@ -14,7 +14,7 @@ for (const width of [1920, 960, 390]) {
     }
     await expect(dashboard.locator('.dashboard-chart-scroll-hint')).toHaveCount(0);
     await expect(comparison.locator('[data-pivot-chart-category-label]')).toHaveCount(8);
-    await page.getByRole('radio', { name: 'Categories', exact: true }).check();
+    await page.getByRole('radio', { name: 'Categories', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Category comparison', exact: true })).toBeVisible();
     await expect(comparison.locator('[data-pivot-chart-category-scroll]')).toHaveCount(0);
     await expect(comparison.locator('[data-pivot-chart-category-label]')).toHaveCount(8);

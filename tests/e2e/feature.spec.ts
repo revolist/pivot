@@ -4,22 +4,30 @@ import { unzipSync, strFromU8 } from 'fflate';
 
 const feature = JSON.parse(readFileSync(new URL('../../feature.json', import.meta.url), 'utf8')) as { title: string };
 
-test(`${feature.title} starts with a clear sales report and restores only on request`, async ({ page }) => {
+test(`${feature.title} starts with a clear sales report and a compact export menu`, async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
   const grid = page.locator('revo-grid').first();
   await expect(grid).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole('tablist', { name: 'Financial report presets' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Sales Overview' })).toHaveCSS('border-bottom-color', 'rgb(37, 99, 235)');
   const expand = page.getByRole('button', { name: 'Expand workspace' });
   await expect(expand).toHaveAttribute('title', 'Expand workspace');
   await expect(expand).toHaveText('↗');
-  await expect(page.getByLabel('Active filters')).toContainText('Year: 2025');
+  await expect(expand).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
+  const exportMenu = page.locator('summary[aria-label="Export"]');
+  await expect(exportMenu.locator('svg')).toBeVisible();
+  await expect(exportMenu).toHaveText('');
+  await exportMenu.hover();
+  await expect(page.getByRole('tooltip')).toHaveText('Export');
+  await exportMenu.click();
+  await expect(exportMenu.locator('..').getByRole('button')).toHaveText(['Export CSV', 'Export XLSX', 'Print / Save PDF']);
+  await page.keyboard.press('Escape');
+  await expect(exportMenu).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Export CSV' })).toBeHidden();
   await expect(page.locator('.financial-pivot-header__title')).toHaveCount(0);
-  await expect(page.locator('.pivot-summary-panel')).toHaveCount(1);
-  await expect(page.locator('.pivot-summary-panel__definition')).toContainText('Country › Category');
-  await expect(page.locator('.pivot-summary-panel__definition')).toContainText('Quarter › Month');
-  await expect(page.locator('.pivot-summary-panel__definition')).toContainText('Revenue (USD)');
+  await expect(page.locator('.pivot-summary-panel')).toHaveCount(0);
   await expect(page.locator('.financial-pivot-header__dataset-note')).toHaveCount(0);
   await expect(page.getByRole('columnheader', { name: 'Grand Total' }).first()).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Grand Total' }).first().locator('input')).toHaveCount(0);
@@ -30,15 +38,15 @@ test(`${feature.title} starts with a clear sales report and restores only on req
   await expect(page.locator('revogr-header .rgHeaderCell', { hasText: 'January' }).first()).toBeVisible();
   await expect(page.getByRole('gridcell', { name: 'Grand Total' }).first()).toBeVisible();
 
-  const fields = page.getByRole('button', { name: 'Config', exact: true });
+  const fields = page.getByRole('button', { name: 'Configurator', exact: true });
   await expect(fields).toHaveAttribute('aria-pressed', 'false');
   await fields.click();
   await expect(fields).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByRole('dialog', { name: 'Pivot fields' })).toBeVisible();
-  await expect(page.getByRole('dialog', { name: 'Pivot fields' }).getByRole('searchbox', { name: 'Search fields' })).toBeVisible();
-  const fieldGrid = page.getByRole('dialog', { name: 'Pivot fields' }).locator('revo-grid').first();
+  await expect(page.getByRole('complementary', { name: 'Pivot fields' })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Pivot fields' }).getByRole('searchbox', { name: 'Search fields' })).toBeVisible();
+  const fieldGrid = page.getByRole('complementary', { name: 'Pivot fields' }).locator('revo-grid').first();
   await expect(fieldGrid).toBeVisible();
-  await expect(page.getByRole('dialog', { name: 'Pivot fields' }).locator('.pivot-dimension-group-name').first()).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Pivot fields' }).locator('.pivot-dimension-group-name').first()).toBeVisible();
   await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; });
   await expect(fieldGrid).toHaveAttribute('theme', 'compact');
   await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
@@ -46,22 +54,27 @@ test(`${feature.title} starts with a clear sales report and restores only on req
   await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; });
   await page.keyboard.press('Escape');
   await expect(fields).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.getByRole('dialog', { name: 'Pivot fields' })).toBeHidden();
+  await expect(page.getByRole('complementary', { name: 'Pivot fields' })).toBeHidden();
   await expect(fields).toBeFocused();
 
-  await page.locator('summary', { hasText: 'Report' }).click();
-  await page.getByRole('button', { name: 'Save this report' }).click();
-  await page.getByRole('tab', { name: 'Profitability' }).click();
-  await expect(page.getByLabel('Active filters')).toContainText('Year: 2025');
-  await expect(page.locator('.pivot-summary-panel')).toContainText('Gross Profit');
-  await page.locator('summary', { hasText: 'Report' }).click();
-  await page.getByRole('button', { name: 'Restore saved report' }).click();
-  await expect(page.getByRole('tab', { name: 'Sales Overview' })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('.pivot-summary-panel')).toContainText('Country › Category');
+  await fields.click();
+  await page.getByRole('button', { name: 'Chart', exact: true }).click();
+  const chartFields = page.getByRole('complementary', { name: 'Pivot chart settings' });
+  await expect(chartFields).toBeVisible();
+  const chartFieldsBox = (await chartFields.boundingBox())!;
+  const workspaceBox = (await page.locator('.financial-pivot-showcase').boundingBox())!;
+  expect(chartFieldsBox.y - workspaceBox.y).toBeLessThanOrEqual(12);
+  await expect(page.getByRole('complementary', { name: 'Pivot fields' })).toHaveCount(0);
+  await fields.click();
+  await expect(chartFields).toBeHidden();
+  await fields.click();
+  await expect(chartFields).toBeVisible();
+  await page.getByRole('button', { name: 'Pivot', exact: true }).click();
+  await expect(page.getByRole('complementary', { name: 'Pivot fields' })).toBeVisible();
+  await fields.click();
+
   await page.getByRole('tab', { name: 'Product Performance' }).click();
-  await page.getByRole('button', { name: 'Reset' }).click();
-  await expect(page.getByRole('tab', { name: 'Sales Overview' })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('.pivot-summary-panel')).toContainText('Revenue (USD)');
+  await expect(page.locator('financial-pivot-header').getByRole('button', { name: 'Reset', exact: true })).toHaveCount(0);
 
   await page.reload();
   await expect(page.getByRole('tab', { name: 'Sales Overview' })).toHaveAttribute('aria-selected', 'true');
@@ -87,8 +100,8 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
     expect(bounds!.height).toBeLessThanOrEqual(viewport.height - 16);
     expect(await page.locator('body').evaluate(body => getComputedStyle(body).overflow)).toBe('hidden');
     await page.getByRole('tab', { name: 'Product Performance' }).click();
-    await page.getByRole('button', { name: 'Config', exact: true }).click();
-    await expect(page.getByRole('dialog', { name: 'Pivot fields' })).toBeVisible();
+    await page.getByRole('button', { name: 'Configurator', exact: true }).click();
+    await expect(page.getByRole('complementary', { name: 'Pivot fields' })).toBeVisible();
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Exit expanded workspace' }).click();
     await expect(workspace).toHaveAttribute('data-expanded', 'false');
@@ -98,21 +111,6 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
     expect(errors).toEqual([]);
   });
 }
-
-test('summary follows the grid Pivot config and hides when it is cleared', async ({ page }) => {
-  await page.goto('/');
-  const summary = page.locator('.pivot-summary-panel');
-  await expect(summary).toContainText('Year: 2025');
-  await page.locator('revo-grid').first().evaluate((grid: HTMLRevoGridElement) => {
-    grid.pivot = { ...grid.pivot, filterSelections: { Year: [2024] } };
-  });
-  await expect(summary).toContainText('Year: 2024');
-  await expect(summary).not.toContainText('Year: 2025');
-  await page.locator('revo-grid').first().evaluate((grid: HTMLRevoGridElement) => {
-    grid.pivot = undefined;
-  });
-  await expect(summary).toBeHidden();
-});
 
 for (const { width, height, showFields } of [
   { width: 1280, height: 800, showFields: false },
@@ -126,19 +124,11 @@ for (const { width, height, showFields } of [
     await page.addStyleTag({ content: '#app { width: calc(100vw - 300px); margin-left: 300px; padding: 0; }' });
     const grid = page.locator('revo-grid').first();
     await expect(grid).toBeVisible({ timeout: 20_000 });
-    const fields = page.getByRole('button', { name: 'Config', exact: true });
+    const fields = page.getByRole('button', { name: 'Configurator', exact: true });
     if (await fields.getAttribute('aria-pressed') !== String(showFields)) await fields.click();
     await expect(fields).toHaveAttribute('aria-pressed', String(showFields));
     const lastHeader = page.getByRole('columnheader', { name: 'Grand Total' }).first();
     await expect(lastHeader).toBeVisible();
-    const definitionBox = await page.locator('.pivot-summary-panel__definition').boundingBox();
-    const filtersBox = await page.getByLabel('Active filters').boundingBox();
-    expect(definitionBox).not.toBeNull();
-    expect(filtersBox).not.toBeNull();
-    const panelBox = await page.locator('.pivot-summary-panel').boundingBox();
-    expect(panelBox).not.toBeNull();
-    expect(definitionBox!.y).toBeGreaterThanOrEqual(panelBox!.y);
-    expect(filtersBox!.y).toBeGreaterThanOrEqual(panelBox!.y);
     const headerBox = await lastHeader.boundingBox();
     const gridBox = await page.locator('.pivot-grid-container').boundingBox();
     expect(headerBox).not.toBeNull();
@@ -153,8 +143,7 @@ test('mobile report actions and tabs remain keyboard reachable', async ({ page }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.getByRole('tablist', { name: 'Financial report presets' })).toBeVisible();
-  await expect(page.locator('.pivot-summary-panel')).toHaveCount(1);
-  await expect(page.locator('.pivot-summary-panel')).toBeVisible();
+  await expect(page.locator('.pivot-summary-panel')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const tabs = page.getByRole('tablist', { name: 'Financial report presets' });
   expect(await tabs.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
@@ -163,9 +152,9 @@ test('mobile report actions and tabs remain keyboard reachable', async ({ page }
   await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('tab', { name: 'Product Performance' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('tab', { name: 'Product Performance' })).toBeInViewport();
-  const fields = page.getByRole('button', { name: 'Config', exact: true });
+  const fields = page.getByRole('button', { name: 'Configurator', exact: true });
   await fields.click();
-  await expect(page.getByRole('dialog', { name: 'Pivot fields' })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Pivot fields' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(fields).toBeFocused();
 });
@@ -194,6 +183,7 @@ test('chart and visible CSV export are usable from the toolbar', async ({ page }
   await expect(grid).toBeHidden();
   await expect(page.getByRole('alert')).toBeEmpty();
   const downloadPromise = page.waitForEvent('download');
+  await page.locator('summary[aria-label="Export"]').click();
   await page.getByRole('button', { name: 'Export CSV' }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe('pivot-visible-report.csv');
@@ -211,9 +201,9 @@ test('chart and visible CSV export are usable from the toolbar', async ({ page }
 test('visible XLSX retains the source-backed USD grand total', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('columnheader', { name: 'Grand Total' }).first()).toBeVisible();
-  await page.locator('summary', { hasText: 'Report' }).click();
+  await page.locator('summary[aria-label="Export"]').click();
   const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export XLSX (visible result)' }).click();
+  await page.getByRole('button', { name: 'Export XLSX' }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe('pivot-visible-report.xlsx');
   const entries = unzipSync(readFileSync(await download.path()));
@@ -230,7 +220,7 @@ test('drill-through returns only the selected month, country and category sales 
   await expect(page.getByText('January', { exact: true })).toBeVisible();
   const audio = page.getByRole('row').filter({ hasText: 'Audio' }).first();
   await audio.getByRole('gridcell', { name: '$691.13' }).first().click({ button: 'right' });
-  await page.getByRole('menuitem', { name: 'Drill Through…' }).click();
+  await page.getByRole('menuitem', { name: 'Drill Through', exact: true }).click();
   const details = page.getByRole('dialog');
   await expect(details).toContainText('3291034:0');
   await expect(details).toContainText('3299003:3');
@@ -241,8 +231,8 @@ test('drill-through returns only the selected month, country and category sales 
 test('print view retains the visible USD grand total', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('columnheader', { name: 'Grand Total' }).first()).toBeVisible();
-  await page.locator('summary', { hasText: 'Report' }).click();
-  await page.getByRole('button', { name: 'Print / Save PDF (visible result)' }).click();
+  await page.locator('summary[aria-label="Export"]').click();
+  await page.getByRole('button', { name: 'Print / Save PDF' }).click();
   const frame = page.locator('iframe[title="Visible pivot result for printing"]');
   await expect(frame).toHaveAttribute('srcdoc', /\$7,776,899\.28/);
 });
@@ -251,8 +241,8 @@ test('Product Performance PDF shows grouped row labels instead of empty rows', a
   await page.goto('/');
   await page.getByRole('tab', { name: 'Product Performance' }).click();
   await expect(page.getByRole('columnheader', { name: 'Grand Total' }).first()).toBeVisible();
-  await page.locator('summary', { hasText: 'Report' }).click();
-  await page.getByRole('button', { name: 'Print / Save PDF (visible result)' }).click();
+  await page.locator('summary[aria-label="Export"]').click();
+  await page.getByRole('button', { name: 'Print / Save PDF' }).click();
   const printTable = page.frameLocator('iframe[title="Visible pivot result for printing"]');
   const rows = printTable.locator('tbody tr');
   await expect(rows.first()).toContainText('Audio');

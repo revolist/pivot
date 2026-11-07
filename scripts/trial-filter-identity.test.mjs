@@ -43,18 +43,18 @@ test('leaves corrected bundles unchanged and refuses an unexpected broken shape'
   assert.throws(() => repairTrialFilterIdentity(fixture.replace('  numericProjection()', '  unused()').replace('this.hasActiveFilters !== broken.prototype.hasActiveFilters) return undefined;', 'false) return undefined;')), /Unexpected/);
 });
 
-for (const [name,file] of [['Pro','@revolist/revogrid-pro/dist/rv-pro-trial.js'],['Pivot','@revolist/pivot/dist/pivot-trial.js']]) {
-  test(`repairs the exact installed ${name} 2.10.0 trial artifact`, () => {
-    const code=readFileSync(new URL('../node_modules/'+file,import.meta.url),'utf8');
-    const result=repairTrialFilterIdentity(code);
-    assert.equal(result.replacements,6);
-    assert.equal(repairTrialFilterIdentity(result.code).replacements,0);
+for (const [name, file] of [['Pro', '@revolist/revogrid-pro'], ['Pivot', '@revolist/pivot']]) {
+  test(`applies the legacy identity repair only to the affected ${name} trial version`, () => {
+    const manifest = JSON.parse(readFileSync(new URL('../node_modules/' + file + '/package.json', import.meta.url), 'utf8'));
+    const filename = name === 'Pro' ? 'rv-pro-trial.js' : 'pivot-trial.js';
+    const url = new URL('../node_modules/' + file + '/dist/' + filename, import.meta.url);
+    const code = readFileSync(url, 'utf8');
+    const transformed = trialFilterIdentityPlugin().transform(code, url.pathname + '?v=development');
+    if (manifest.version === '2.10.0') {
+      assert.equal(repairTrialFilterIdentity(code).replacements, 6);
+      assert.equal(repairTrialFilterIdentity(transformed.code).replacements, 0);
+    } else {
+      assert.equal(transformed, undefined);
+    }
   });
 }
-
-
-test('repairs Vite development module URLs with a cache query', () => {
-  const url = new URL('../node_modules/@revolist/revogrid-pro/dist/rv-pro-trial.js', import.meta.url);
-  const code = readFileSync(url, 'utf8');
-  assert.ok(trialFilterIdentityPlugin().transform(code, url.pathname + '?v=development').code);
-});

@@ -5,16 +5,10 @@ import './financial-pivot-header/financial-pivot-header.scss';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import { loadContosoData } from './contoso-data';
 import {
-  hasSavedPivotReport,
-  handleReportAction,
-  listSavedPivotReports,
-  loadSavedPivotReport,
-  persistPivotState,
   restoreActivePreset,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, exportFinancialXlsx, financialActionError, financialChartSettingsUi, setInlineChartSettingsVisible, usesChartSettingsDrawer, mountFinancialChart, printFinancialPivot } from './financial.actions';
-import { createFinancialFieldsDrawer } from './financial-fields-drawer';
+import { exportFinancialCsv, exportFinancialXlsx, financialActionError, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -56,9 +50,7 @@ export function load(
   let configuratorVisible = false;
   let expanded = false;
   let chartVisible = false;
-  let chartFieldsVisible = false;
   let chart: PivotChartRef | undefined;
-  let savedAvailable = hasSavedPivotReport();
 
   const container = document.createElement('div');
   container.className = 'financial-pivot-showcase grow flex flex-col gap-2 h-full p-2 box-border';
@@ -68,11 +60,8 @@ export function load(
     configuratorVisible,
     expanded,
     chartVisible,
-    savedAvailable,
-    savedReports: listSavedPivotReports(),
   });
 
-  const summaryMount = document.createElement('div');
 
   const chartContainer = document.createElement('div');
   chartContainer.className = 'financial-pivot-chart';
@@ -87,13 +76,17 @@ export function load(
   const gridContainer = document.createElement('div');
   gridContainer.className = 'pivot-grid-container h-full overflow-hidden';
   let grid: HTMLRevoGridElement;
-  const fieldsDrawer = createFinancialFieldsDrawer(() => {
-    const pivotWasVisible = configuratorVisible;
-    configuratorVisible = false;
-    chartFieldsVisible = false;
-    if (chart && !usesChartSettingsDrawer()) setInlineChartSettingsVisible(grid, false);
-    if (pivotWasVisible) applyPivotOptions();
-    refreshLayout();
+  const main = document.createElement('div');
+  main.className = 'financial-pivot-main';
+  const sidebar = document.createElement('aside');
+  sidebar.className = 'financial-pivot-sidebar';
+  const pivotSettingsMount = document.createElement('div');
+  const chartSettingsMount = document.createElement('div');
+  pivotSettingsMount.className = chartSettingsMount.className = 'financial-pivot-sidebar__mount';
+  sidebar.append(pivotSettingsMount, chartSettingsMount);
+
+  container.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && configuratorVisible) toggleFields();
   });
 
   function applyPivotOptions() {
@@ -101,8 +94,8 @@ export function load(
     grid.pivot = applyFinancialPivotOptions(
       pivotConfig,
       data,
-      configuratorVisible,
-      fieldsDrawer.mountTo,
+      configuratorVisible && !chartVisible,
+      pivotSettingsMount,
       gridContainer.clientWidth,
     );
   }
@@ -110,13 +103,15 @@ export function load(
   function refreshLayout() {
     header.state = {
       activePreset,
-      configuratorVisible: chartVisible ? chartFieldsVisible : configuratorVisible,
+      configuratorVisible,
       expanded,
       chartVisible,
-      savedAvailable,
-      savedReports: listSavedPivotReports(),
     };
     chartContainer.hidden = !chartVisible;
+    sidebar.hidden = !configuratorVisible;
+    sidebar.setAttribute('aria-label', chartVisible ? 'Chart fields' : 'Pivot fields');
+    pivotSettingsMount.hidden = chartVisible;
+    chartSettingsMount.hidden = !chartVisible;
     container.classList.toggle('financial-pivot-showcase--chart', chartVisible);
     scrollContainer.setAttribute('aria-hidden', String(chartVisible));
     container.dataset.expanded = String(expanded);
@@ -142,14 +137,13 @@ export function load(
       columns: FINANCIAL_COLUMNS,
       columnTypes: FINANCIAL_COLUMN_TYPES,
       plugins: FINANCIAL_SHOWCASE_PLUGINS,
-      pivotSummaryPanel: { mountTo: summaryMount },
       pivotCharts: FINANCIAL_PIVOT_CHARTS,
-      pivotChartsUi: financialChartSettingsUi(FINANCIAL_PIVOT_CHARTS_UI, fieldsDrawer.chartMountTo),
+      pivotChartsUi: FINANCIAL_PIVOT_CHARTS_UI,
       pivot: applyFinancialPivotOptions(
         pivotConfig,
         data,
-        configuratorVisible,
-        fieldsDrawer.mountTo,
+        configuratorVisible && !chartVisible,
+        pivotSettingsMount,
         gridContainer.clientWidth,
       ),
     });
@@ -170,30 +164,12 @@ export function load(
     refreshLayout();
     replacePivotOptions();
   });
-  header.addEventListener(FINANCIAL_PIVOT_CONFIGURATOR_EVENT, () => {
-    if (chartVisible) {
-      if (!usesChartSettingsDrawer()) {
-        chartFieldsVisible = !chartFieldsVisible;
-        setInlineChartSettingsVisible(grid, chartFieldsVisible);
-        refreshLayout();
-        return;
-      }
-      if (chartFieldsVisible) fieldsDrawer.hide();
-      else {
-        chartFieldsVisible = true;
-        fieldsDrawer.show(document.activeElement as HTMLElement, 'chart');
-      }
-      refreshLayout();
-      return;
-    }
-    if (configuratorVisible) fieldsDrawer.hide();
-    else {
-      fieldsDrawer.show(document.activeElement as HTMLElement);
-      configuratorVisible = true;
-    }
-    applyPivotOptions();
+  function toggleFields() {
+    configuratorVisible = !configuratorVisible;
     refreshLayout();
-  });
+    applyPivotOptions();
+  }
+  header.addEventListener(FINANCIAL_PIVOT_CONFIGURATOR_EVENT, toggleFields);
   header.addEventListener(FINANCIAL_PIVOT_EXPANDED_EVENT, () => {
     expanded = !expanded;
     refreshLayout();
@@ -202,53 +178,27 @@ export function load(
     const action = (event as CustomEvent<FinancialPivotAction>).detail;
     actionError.textContent = '';
     try {
-      if (action === 'export-json' || typeof action === 'object') {
-        const result = handleReportAction(action, pivotConfig, activePreset);
-        if (result.restored) {
-          pivotConfig = result.restored.config;
-          activePreset = result.restored.preset;
-          replacePivotOptions();
-        }
-        refreshLayout();
-        actionError.textContent = result.error ?? '';
-        return;
-      }
-      if (action === 'reset') {
-        activePreset = options.initialPreset ?? 'sales';
-        pivotConfig = createFinancialPreset(activePreset);
-        refreshLayout();
-        replacePivotOptions();
-      }
-      if (action === 'save') {
-        savedAvailable = persistPivotState(pivotConfig, activePreset);
-        if (!savedAvailable) actionError.textContent = 'This browser could not save the report.';
-        refreshLayout();
-      }
-      if (action === 'restore') {
-        const saved = loadSavedPivotReport();
-        if (saved) {
-          pivotConfig = saved.config;
-          activePreset = saved.preset;
-          refreshLayout();
-          replacePivotOptions();
-        } else actionError.textContent = 'The saved report could not be restored.';
-      }
       if (action === 'export') await exportFinancialCsv(grid);
       if (action === 'export-xlsx') await exportFinancialXlsx(grid);
       if (action === 'print') await printFinancialPivot(grid);
       if (action === 'chart') {
-        fieldsDrawer.hide();
         chartVisible = !chartVisible;
         refreshLayout();
-        if (chartVisible && !chart) chart = await mountFinancialChart(grid, chartContainer, options.chartTitle, fieldsDrawer.chartMountTo);
+        applyPivotOptions();
+        if (chartVisible && !chart) chart = await mountFinancialChart(grid, chartContainer, chartSettingsMount, options.chartTitle);
       }
     } catch (error) {
-      if (action === 'chart') { chartVisible = false; refreshLayout(); }
+      if (action === 'chart') {
+        chartVisible = false;
+        refreshLayout();
+        applyPivotOptions();
+      }
       actionError.textContent = financialActionError(error);
     }
   });
   scrollContainer.appendChild(gridContainer);
-  container.append(header, summaryMount, actionError, chartContainer, scrollContainer);
+  main.append(header, actionError, chartContainer, scrollContainer);
+  container.append(main, sidebar);
   parent.appendChild(container);
   refreshLayout();
   initializeGrid();
@@ -284,7 +234,6 @@ export function load(
     disconnectTheme();
     resizeObserver.disconnect();
     chart?.destroy();
-    fieldsDrawer.destroy();
     grid.removeEventListener('pivot-config-update', onPivotConfigUpdate as EventListener);
     grid.remove();
     container.remove();

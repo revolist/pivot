@@ -43,21 +43,25 @@ test('linked charts and Pivot follow the dashboard controls', async ({ page }) =
   ]);
   const firstChart = await page.getByTestId('quarter-chart').locator('svg').innerHTML();
 
-  await page.getByRole('combobox', { name: 'Brand' }).selectOption('Contoso');
+  await page.getByRole('combobox', { name: 'Brand' }).click();
+
+  await page.getByRole('option', { name: 'Contoso', exact: true }).click();
   await expect(page.getByText(/filtered lines · 2025 · Contoso/)).toBeVisible();
   await expect.poll(async () => page.getByTestId('quarter-chart').locator('svg').innerHTML())
     .not.toBe(firstChart);
   await expect.poll(donutValues).not.toEqual(firstDonut);
   await expect(donut.locator('[data-pivot-chart-part-to-whole-mark="donut"]')).toHaveCount(4);
   const filteredChart = await page.getByTestId('quarter-chart').locator('svg').innerHTML();
-  await page.getByRole('radio', { name: 'Categories' }).check();
+  await page.getByRole('radio', { name: 'Categories' }).click();
   await expect(page.getByRole('heading', { name: 'Quarterly revenue by category' })).toBeVisible();
   await expect(page.locator('.pivot-dashboard .pivot-summary-panel')).toHaveCount(0);
   await expect.poll(async () => page.getByTestId('quarter-chart').locator('svg').innerHTML())
     .not.toBe(filteredChart);
   await expect(page.getByTestId('quarter-chart').locator('svg')).toContainText('Computers');
 
-  await page.getByRole('combobox', { name: 'Year' }).selectOption('2024');
+  await page.getByRole('combobox', { name: 'Year' }).click();
+
+  await page.getByRole('option', { name: '2024', exact: true }).click();
   await expect(page.getByText(/filtered lines · 2024 · Contoso/)).toBeVisible();
   await page.getByRole('button', { name: 'Reset report' }).click();
   await expect(page.getByText(/filtered lines · 2025 · all brands/)).toBeVisible();

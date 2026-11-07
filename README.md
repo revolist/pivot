@@ -33,7 +33,7 @@ project and install the trial packages under the production import names:
 
 ```bash
 pnpm config set @revolist:registry https://trial.rv-grid.com --location=project
-pnpm add @revolist/revogrid@4.29.0 @revolist/revogrid-pro@npm:@revolist/rv-pro-trial@3.0.18 @revolist/pivot@npm:@revolist/pivot-trial@3.0.18
+pnpm add @revolist/revogrid@4.29.0 @revolist/revogrid-pro@npm:@revolist/rv-pro-trial@4.0.1 @revolist/pivot@npm:@revolist/pivot-trial@4.0.1
 ```
 
 ### Pro
@@ -43,17 +43,16 @@ packages. Source imports stay unchanged.
 
 ```bash
 pnpm config delete @revolist:registry --location=project
-pnpm add @revolist/revogrid@4.29.0 @revolist/revogrid-pro@3.0.18 @revolist/pivot@3.0.18
+pnpm add @revolist/revogrid@4.29.0 @revolist/revogrid-pro@4.0.1 @revolist/pivot@4.0.1
 ```
 
 ## Chart settings compatibility
 
-The showcase's Config action toggles inline chart settings with Pivot 3.x,
-including 3.1.2. Pivot 4+ mounts those settings in the shared Fields drawer.
-The Vite config reads the resolved Pivot package version (including trial aliases)
-and defines `import.meta.env.REVOGRID_PIVOT_VERSION`. Other Vite hosts should
-provide that value for their resolved package; without it settings stay inline.
-The Pivot field configurator keeps its drawer in either version.
+The 4.0.1 showcase's Configurator action toggles the inline Pivot or Chart
+settings sidebar. Switching views preserves chart settings, and Escape closes
+the sidebar and returns focus to its trigger. The reusable chart-settings
+compatibility helpers and ESM package-version resolver remain available for
+hosts that support earlier Pivot versions.
 
 ## Quick start
 

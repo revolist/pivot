@@ -13,15 +13,9 @@ import './financial-pivot-header/financial-pivot-header.scss';
 import { currentTheme, observeCurrentTheme } from './shared/theme';
 import { loadContosoData } from './contoso-data';
 import {
-  hasSavedPivotReport,
-  handleReportAction,
-  listSavedPivotReports,
-  loadSavedPivotReport,
-  persistPivotState,
   restorePivotConfig,
 } from './financial.analytics';
-import { exportFinancialCsv, exportFinancialXlsx, financialActionError, financialChartSettingsUi, setInlineChartSettingsVisible, usesChartSettingsDrawer, mountFinancialChart, printFinancialPivot } from './financial.actions';
-import { createFinancialFieldsDrawer, type FinancialFieldsDrawer } from './financial-fields-drawer';
+import { exportFinancialCsv, exportFinancialXlsx, financialActionError, mountFinancialChart, printFinancialPivot } from './financial.actions';
 import {
   FINANCIAL_COLUMNS,
   FINANCIAL_COLUMN_TYPES,
@@ -75,14 +69,10 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
   const [pivotConfig, setPivotConfig] = useState<PivotConfig>(() => restorePivotConfig(activePreset));
   const [configuratorVisible, setConfiguratorVisible] = useState(false);
   const [configuratorMount, setConfiguratorMount] = useState<HTMLElement>();
-  const [chartSettingsMount, setChartSettingsMount] = useState<HTMLElement>();
-  const fieldsDrawer = useRef<FinancialFieldsDrawer>();
+  const setConfiguratorMountRef = useCallback((element: HTMLDivElement | null) => setConfiguratorMount(element ?? undefined), []);
+  const chartSettingsMount = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [chartVisible, setChartVisible] = useState(false);
-  const [chartFieldsVisible, setChartFieldsVisible] = useState(false);
-  const chartUi = useMemo(() => financialChartSettingsUi(FINANCIAL_PIVOT_CHARTS_UI, chartSettingsMount, chartFieldsVisible), [chartSettingsMount, chartFieldsVisible]);
-  const [savedAvailable, setSavedAvailable] = useState(hasSavedPivotReport);
-  const [reportsRevision, setReportsRevision] = useState(0);
   const [actionError, setActionError] = useState('');
   const [columnSize, setColumnSize] = useState(128);
   const [hostWidth, setHostWidth] = useState(0);
@@ -90,8 +80,8 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
   const chartRef = useRef<PivotChartRef>();
 
   const pivot = useMemo(
-    () => applyFinancialPivotOptions(pivotConfig, data, configuratorVisible, configuratorMount, hostWidth),
-    [pivotConfig, data, configuratorVisible, configuratorMount, hostWidth],
+    () => applyFinancialPivotOptions(pivotConfig, data, configuratorVisible && !chartVisible, configuratorMount, hostWidth),
+    [pivotConfig, data, configuratorVisible, chartVisible, configuratorMount, hostWidth],
   );
   const plugins = useMemo(() => FINANCIAL_SHOWCASE_PLUGINS, []);
   const columns = useMemo(() => FINANCIAL_COLUMNS, []);
@@ -99,7 +89,6 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
   const gridRef = useRef<HTMLRevoGridElement>(null);
   const gridHostRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<FinancialPivotHeaderElement>(null);
-  const summaryMountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => observeCurrentTheme(setIsDark), []);
   useEffect(() => {
@@ -114,16 +103,6 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
     fit();
     return () => observer.disconnect();
   }, [loading, pivotConfig]);
-  useEffect(() => {
-    const drawer = createFinancialFieldsDrawer(() => {
-      setConfiguratorVisible(false);
-      setChartFieldsVisible(false);
-    });
-    fieldsDrawer.current = drawer;
-    setConfiguratorMount(drawer.mountTo);
-    setChartSettingsMount(drawer.chartMountTo);
-    return () => { drawer.destroy(); fieldsDrawer.current = undefined; };
-  }, []);
 
   useEffect(() => {
     if (rows) { setData(initialData); setLoading(false); return; }
@@ -144,9 +123,9 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
   useEffect(() => () => chartRef.current?.destroy(), []);
 
   useEffect(() => {
-    if (!chartVisible || chartRef.current || !chartContainer.current || !gridRef.current) return;
+    if (!chartVisible || chartRef.current || !chartContainer.current || !chartSettingsMount.current || !gridRef.current) return;
     let cancelled = false;
-    mountFinancialChart(gridRef.current, chartContainer.current, chartTitle, fieldsDrawer.current?.chartMountTo).then((chart) => {
+    mountFinancialChart(gridRef.current, chartContainer.current, chartSettingsMount.current, chartTitle).then((chart) => {
       if (cancelled) chart.destroy();
       else chartRef.current = chart;
     }).catch((error) => {
@@ -178,22 +157,14 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
 
   const headerState = useMemo<FinancialPivotHeaderState>(() => ({
     activePreset,
-    configuratorVisible: chartVisible ? chartFieldsVisible : configuratorVisible,
+    configuratorVisible,
     expanded,
     chartVisible,
-    savedAvailable,
-    savedReports: listSavedPivotReports(),
-  }), [activePreset, configuratorVisible, chartFieldsVisible, expanded, chartVisible, savedAvailable, pivotConfig, reportsRevision]);
+  }), [activePreset, configuratorVisible, expanded, chartVisible]);
 
   useEffect(() => {
     if (headerRef.current) headerRef.current.state = headerState;
   }, [headerState]);
-
-  useEffect(() => {
-    if (gridRef.current && summaryMountRef.current) {
-      gridRef.current.pivotSummaryPanel = { mountTo: summaryMountRef.current };
-    }
-  }, [loading, loadError]);
 
   useEffect(() => {
     const header = headerRef.current;
@@ -201,62 +172,16 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
     const onPreset = (event: Event) => {
       selectPreset((event as CustomEvent<FinancialPresetId>).detail);
     };
-    const onConfigurator = () => {
-      if (chartVisible && gridRef.current) {
-        if (!usesChartSettingsDrawer()) {
-          setInlineChartSettingsVisible(gridRef.current, !chartFieldsVisible);
-          setChartFieldsVisible(!chartFieldsVisible);
-          return;
-        }
-        if (chartFieldsVisible) fieldsDrawer.current?.hide();
-        else {
-          setChartFieldsVisible(true);
-          fieldsDrawer.current?.show(document.activeElement as HTMLElement, 'chart');
-        }
-        return;
-      }
-      if (configuratorVisible) fieldsDrawer.current?.hide();
-      else {
-        fieldsDrawer.current?.show(document.activeElement as HTMLElement);
-        setConfiguratorVisible(true);
-      }
-    };
+    const onConfigurator = () => setConfiguratorVisible((visible) => !visible);
     const onExpanded = () => setExpanded((value) => !value);
     const onAction = async (event: Event) => {
       const action = (event as CustomEvent<FinancialPivotAction>).detail;
       setActionError('');
       try {
-        if (action === 'export-json' || typeof action === 'object') {
-          const result = handleReportAction(action, pivotConfig, activePreset);
-          if (result.restored) {
-            if (gridRef.current) gridRef.current.pivot = undefined;
-            window.setTimeout(() => { setPivotConfig(result.restored!.config); setActivePreset(result.restored!.preset); });
-          }
-          setSavedAvailable(hasSavedPivotReport());
-          setReportsRevision((value) => value + 1);
-          setActionError(result.error ?? '');
-          return;
-        }
-        if (action === 'reset') selectPreset(initialPreset);
-        if (action === 'save') {
-          const saved = persistPivotState(pivotConfig, activePreset);
-          setSavedAvailable(saved);
-          if (!saved) setActionError('This browser could not save the report.');
-        }
-        if (action === 'restore') {
-          const saved = loadSavedPivotReport();
-          if (saved) {
-            if (gridRef.current) gridRef.current.pivot = undefined;
-            window.setTimeout(() => { setPivotConfig(saved.config); setActivePreset(saved.preset); });
-          } else setActionError('The saved report could not be restored.');
-        }
         if (action === 'export' && gridRef.current) await exportFinancialCsv(gridRef.current);
         if (action === 'export-xlsx' && gridRef.current) await exportFinancialXlsx(gridRef.current);
         if (action === 'print' && gridRef.current) await printFinancialPivot(gridRef.current);
-        if (action === 'chart') {
-          fieldsDrawer.current?.hide();
-          setChartVisible((value) => !value);
-        }
+        if (action === 'chart') setChartVisible((value) => !value);
       } catch {
         setActionError('Could not complete this report action. Please try again.');
       }
@@ -271,43 +196,49 @@ function PivotShowcase({ rows, initialPreset = 'sales', chartTitle }: PivotProps
       header.removeEventListener(FINANCIAL_PIVOT_EXPANDED_EVENT, onExpanded);
       header.removeEventListener(FINANCIAL_PIVOT_ACTION_EVENT, onAction);
     };
-  }, [selectPreset, pivotConfig, activePreset, configuratorVisible, chartVisible, chartFieldsVisible]);
+  }, [selectPreset]);
 
   return (
     <div
       className={`financial-pivot-showcase grow flex flex-col gap-2 h-full p-2 box-border${chartVisible ? ' financial-pivot-showcase--chart' : ''}`}
       data-expanded={expanded}
+      onKeyDown={(event) => { if (event.key === 'Escape') setConfiguratorVisible(false); }}
     >
-      <financial-pivot-header ref={headerRef} />
-      <div ref={summaryMountRef} />
-      {actionError && <div role="alert" className="financial-pivot-header__question">{actionError}</div>}
-      {loading && <div role="status" className="financial-pivot-header__question">Loading Contoso retail data…</div>}
-      {loadError && <div role="alert" className="financial-pivot-header__question">{loadError}</div>}
-      <div ref={chartContainer} className="financial-pivot-chart" aria-label="Pivot chart" hidden={!chartVisible} />
+      <div className="financial-pivot-main">
+        <financial-pivot-header ref={headerRef} />
+        {actionError && <div role="alert" className="financial-pivot-header__question">{actionError}</div>}
+        {loading && <div role="status" className="financial-pivot-header__question">Loading Contoso retail data…</div>}
+        {loadError && <div role="alert" className="financial-pivot-header__question">{loadError}</div>}
+        <div ref={chartContainer} className="financial-pivot-chart" aria-label="Pivot chart" hidden={!chartVisible} />
 
-      <div className="financial-pivot-grid-view grow min-h-0 overflow-auto" aria-hidden={chartVisible}>
-        <div ref={gridHostRef} className="pivot-grid-container h-full overflow-hidden">
-          <RevoGrid
-            ref={gridRef}
-            className="overflow-hidden skip-style h-full min-h-0 cell-border"
-            hideAttribution
-            range
-            resize
-            filter
-            multiRowHeader={FINANCIAL_MULTI_ROW_HEADER}
-            colSize={columnSize}
-            source={data}
-            columns={columns}
-            pivot={pivot}
-            pivotCharts={FINANCIAL_PIVOT_CHARTS}
-            pivotChartsUi={chartUi}
-            theme={isDark ? 'darkCompact' : 'compact'}
-            plugins={plugins}
-            columnTypes={columnTypes}
-            readonly
-          />
+        <div className="financial-pivot-grid-view grow min-h-0 overflow-auto" aria-hidden={chartVisible}>
+          <div ref={gridHostRef} className="pivot-grid-container h-full overflow-hidden">
+            <RevoGrid
+              ref={gridRef}
+              className="overflow-hidden skip-style h-full min-h-0 cell-border"
+              hideAttribution
+              range
+              resize
+              filter
+              multiRowHeader={FINANCIAL_MULTI_ROW_HEADER}
+              colSize={columnSize}
+              source={data}
+              columns={columns}
+              pivot={pivot}
+              pivotCharts={FINANCIAL_PIVOT_CHARTS}
+              pivotChartsUi={FINANCIAL_PIVOT_CHARTS_UI}
+              theme={isDark ? 'darkCompact' : 'compact'}
+              plugins={plugins}
+              columnTypes={columnTypes}
+              readonly
+            />
+          </div>
         </div>
       </div>
+      <aside className="financial-pivot-sidebar" hidden={!configuratorVisible} aria-label={chartVisible ? 'Chart fields' : 'Pivot fields'}>
+        <div ref={setConfiguratorMountRef} className="financial-pivot-sidebar__mount" hidden={chartVisible} />
+        <div ref={chartSettingsMount} className="financial-pivot-sidebar__mount" hidden={!chartVisible} />
+      </aside>
     </div>
   );
 }

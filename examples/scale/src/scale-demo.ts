@@ -1,3 +1,9 @@
+import questionIcon from '@fortawesome/fontawesome-free/svgs/solid/question.svg?raw';
+import { applyControlPresentation } from '@revolist/ui';
+import { IconButton, SegmentedSwitch } from '@revolist/ui/preact';
+import { h } from 'preact';
+import { renderPreactInto } from '@revolist/ui/preact-mount';
+import '@revolist/ui/styles.css';
 import { currentTheme, observeCurrentTheme } from '../../../src/shared/theme';
 /** Client workload UI and measurements. Data generation and Pivot configuration are separate so you can replace either without rewriting the view. */
 import { defineCustomElements } from '@revolist/revogrid/loader';
@@ -11,9 +17,18 @@ import { generateScaleRowsAsync } from './data';
 import { createScalePivotConfig } from './pivot-config';
 import '@revolist/revogrid-pro/styles.css';
 import '@revolist/pivot/styles.css';
+import '../../../src/shared/pivot-report-tabs.css';
 import './style.css';
 
 defineCustomElements();
+
+const metrics = [
+  { id: "generation", label: "Data generation", helpLabel: "About data generation", description: "Time spent generating the selected synthetic rows in this browser." },
+  { id: "aggregation", label: "Pivot apply", helpLabel: "About Pivot apply", description: "Time from source or config assignment to the public model-change event, including queueing. This is not a pure aggregation benchmark." },
+  { id: "render", label: "Paint estimate", helpLabel: "About paint estimate", description: "Time from the model-change event through the next two animation frames. This is not a browser render profile." },
+  { id: "interaction", label: "Layout interaction", helpLabel: "About layout interaction", description: "Measured after switching the row hierarchy. Shows Pivot apply / paint estimate in milliseconds; available for client workloads." },
+  { id: "workload", label: "Workload", helpLabel: "About workload", description: "Selected source row count in this browser." },
+];
 
 export function mountScaleDemo(app: HTMLElement) {
 app.innerHTML = `
@@ -24,11 +39,7 @@ app.innerHTML = `
       <p>Choose a workload, inspect measured stages, then change the row hierarchy. Results describe this browser and device only.</p>
     </header>
     <div class="scale-controls">
-      <nav class="scale-workloads" role="tablist" aria-label="Client workload">
-        <button type="button" role="tab" aria-selected="true" tabindex="0" data-count="10000">10K rows</button>
-        <button type="button" role="tab" aria-selected="false" tabindex="-1" data-count="100000">100K rows</button>
-        <button type="button" role="tab" aria-selected="false" tabindex="-1" data-count="1000000" title="Opt in: generation and Pivot processing may use substantial memory">1M rows · opt in</button>
-      </nav>
+      <div id="scale-workloads"></div>
       <p id="status" class="scale-status" role="status">Preparing 10K rows…</p>
       <div class="scale-actions">
         <button type="button" data-action="fields" aria-pressed="false">Show fields</button>
@@ -42,28 +53,19 @@ app.innerHTML = `
         <strong>Performance</strong>
         <span class="scale-performance-context">Measured live in this browser</span>
       </div>
-      <div class="scale-performance-metric">
-        <div class="scale-performance-label">Data generation <span class="scale-metric-help"><button type="button" class="scale-metric-help-trigger" aria-label="About data generation" aria-describedby="scale-generation-tooltip">?</button><span id="scale-generation-tooltip" class="scale-metric-tooltip" role="tooltip">Time spent generating the selected synthetic rows in this browser.</span></span></div>
-        <strong id="generation">—</strong>
-      </div>
-      <div class="scale-performance-metric">
-        <div class="scale-performance-label">Pivot apply <span class="scale-metric-help"><button type="button" class="scale-metric-help-trigger" aria-label="About Pivot apply" aria-describedby="scale-aggregation-tooltip">?</button><span id="scale-aggregation-tooltip" class="scale-metric-tooltip" role="tooltip">Time from source or config assignment to the public model-change event, including queueing. This is not a pure aggregation benchmark.</span></span></div>
-        <strong id="aggregation">—</strong>
-      </div>
-      <div class="scale-performance-metric">
-        <div class="scale-performance-label">Paint estimate <span class="scale-metric-help"><button type="button" class="scale-metric-help-trigger" aria-label="About paint estimate" aria-describedby="scale-render-tooltip">?</button><span id="scale-render-tooltip" class="scale-metric-tooltip" role="tooltip">Time from the model-change event through the next two animation frames. This is not a browser render profile.</span></span></div>
-        <strong id="render">—</strong>
-      </div>
-      <div class="scale-performance-metric">
-        <div class="scale-performance-label">Layout interaction <span class="scale-metric-help"><button type="button" class="scale-metric-help-trigger" aria-label="About layout interaction" aria-describedby="scale-interaction-tooltip">?</button><span id="scale-interaction-tooltip" class="scale-metric-tooltip" role="tooltip">Measured after switching the row hierarchy. Shows Pivot apply / paint estimate in milliseconds; available for client workloads.</span></span></div>
-        <strong id="interaction">—</strong>
-      </div>
-      <div class="scale-performance-metric">
-        <div class="scale-performance-label">Workload <span class="scale-metric-help"><button type="button" class="scale-metric-help-trigger" aria-label="About workload" aria-describedby="scale-workload-tooltip">?</button><span id="scale-workload-tooltip" class="scale-metric-tooltip" role="tooltip">Selected source row count in this browser.</span></span></div>
-        <strong id="workload">—</strong>
-      </div>
+      ${metrics.map(({ id, label }) => `
+        <div class="scale-performance-metric">
+          <div class="scale-performance-label">${label} <span data-metric-help="${id}"></span></div>
+          <strong id="${id}">—</strong>
+        </div>`).join('')}
     </section>
   </section>`;
+applyControlPresentation(app);
+const metricHelpHosts = metrics.map(({ id, helpLabel, description }) => {
+  const host = app.querySelector<HTMLElement>(`[data-metric-help="${id}"]`)!;
+  renderPreactInto(host, h(IconButton, { label: helpLabel, title: description, icon: questionIcon }));
+  return host;
+});
 
 const status = app.querySelector<HTMLElement>('#status')!;
 const gridHost = app.querySelector<HTMLElement>('#grid-host')!;
@@ -84,13 +86,21 @@ let runToken = 0;
     if (grid) grid.theme = isDark ? 'darkCompact' : 'compact';
   });
 
-const workloadTabs = Array.from(app.querySelectorAll<HTMLButtonElement>('.scale-workloads button'));
-function setActiveWorkload(count: number | null) {
-  workloadTabs.forEach((tab, index) => {
-    const selected = Number(tab.dataset.count) === count;
-    tab.setAttribute('aria-selected', String(selected));
-    tab.tabIndex = selected || (count === null && index === 0) ? 0 : -1;
-  });
+const workloadHost = app.querySelector<HTMLElement>('#scale-workloads')!;
+const workloadOptions = [
+  { value: 10_000, label: '10K rows' },
+  { value: 100_000, label: '100K rows' },
+  { value: 1_000_000, label: '1M rows · opt in', title: 'Opt in: generation and Pivot processing may use substantial memory' },
+];
+function renderWorkloads(count: number, disabled: boolean) {
+  renderPreactInto(workloadHost, h(SegmentedSwitch<number>, {
+    className: 'scale-workloads pivot-report-tabs',
+    ariaLabel: 'Client workload',
+    options: workloadOptions,
+    value: count,
+    disabled,
+    onChange: value => void runClient(value),
+  }));
 }
 
 const nextPaint = () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
@@ -137,14 +147,14 @@ function waitForModel(next: HTMLRevoGridElement): Promise<number> {
 async function runClient(count: number) {
   const token = ++runToken;
   layout = false;
-  setActiveWorkload(count);
+  renderWorkloads(count, true);
   status.textContent = `Generating ${formatCount(count)} rows…`;
   output('workload', `${formatCount(count)} client rows`);
   output('generation', '…');
   output('aggregation', '…');
   output('render', '…');
   output('interaction', '—');
-  for (const button of app!.querySelectorAll<HTMLButtonElement>('button')) button.disabled = true;
+  for (const button of app.querySelectorAll<HTMLButtonElement>('.scale-actions button')) button.disabled = true;
   try {
     const generationStart = performance.now();
     const rows = await generateScaleRowsAsync(count);
@@ -164,10 +174,10 @@ async function runClient(count: number) {
     currentCount = count;
     status.textContent = `${formatCount(count)} rows ready`;
   } catch (error) {
-    setActiveWorkload(currentCount || null);
     status.textContent = `Could not finish workload: ${error instanceof Error ? error.message : String(error)}`;
   } finally {
-    for (const button of app!.querySelectorAll<HTMLButtonElement>('button')) button.disabled = false;
+    if (token === runToken) renderWorkloads(currentCount, false);
+    for (const button of app.querySelectorAll<HTMLButtonElement>('.scale-actions button')) button.disabled = false;
   }
 }
 
@@ -193,29 +203,21 @@ async function switchLayout() {
   }
 }
 
-workloadTabs.forEach((button) => {
-  button.addEventListener('click', () => void runClient(Number(button.dataset.count)));
-  button.addEventListener('keydown', (event) => {
-    const index = workloadTabs.indexOf(button);
-    const nextIndex = event.key === 'ArrowRight' ? (index + 1) % workloadTabs.length
-      : event.key === 'ArrowLeft' ? (index - 1 + workloadTabs.length) % workloadTabs.length
-      : event.key === 'Home' ? 0
-      : event.key === 'End' ? workloadTabs.length - 1
-      : -1;
-    if (nextIndex < 0) return;
-    event.preventDefault();
-    workloadTabs[nextIndex].focus();
-    workloadTabs[nextIndex].click();
-  });
-});
 app.querySelector<HTMLButtonElement>('[data-action="interaction"]')!.addEventListener('click', () => void switchLayout());
 fieldsButton.addEventListener('click', () => {
   const visible = clientDemo.classList.toggle('fields-visible');
-  fieldsButton.setAttribute('aria-pressed', String(visible));
+  fieldsButton.classList.add('rv-choice-chip'); fieldsButton.setAttribute('aria-pressed', String(visible));
   fieldsButton.textContent = visible ? 'Hide fields' : 'Show fields';
 });
 
 void runClient(10_000);
 
-  return () => { stopTheme(); ++runToken; grid?.remove(); app.replaceChildren(); };
+  return () => {
+    stopTheme();
+    ++runToken;
+    renderPreactInto(workloadHost, null);
+    for (const host of metricHelpHosts) renderPreactInto(host, null);
+    grid?.remove();
+    app.replaceChildren();
+  };
 }
