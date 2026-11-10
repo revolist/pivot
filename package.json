@@ -53,7 +53,7 @@
     "@revolist/react-datagrid": "4.31.3",
     "@revolist/revogrid": "4.31.3",
     "@revolist/revogrid-column-numeral": "2.0.11",
-    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@4.0.1",
+    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@4.0.6",
     "@revolist/pivot": "npm:@revolist/pivot-trial@4.0.1",
     "@revolist/vue3-datagrid": "4.31.3",
     "fflate": "0.8.3",

@@ -16,7 +16,7 @@
     "@fortawesome/fontawesome-free": "7.3.1",
     "@revolist/pivot": "npm:@revolist/pivot-trial@4.0.1",
     "@revolist/revogrid": "4.31.3",
-    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@4.0.1",
+    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@4.0.6",
     "@revolist/ui": "4.0.1",
     "preact": "10.29.1"
   },
