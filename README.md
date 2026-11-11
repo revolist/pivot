@@ -33,7 +33,7 @@ project and install the trial packages under the production import names:
 
 ```bash
 pnpm config set @revolist:registry https://trial.rv-grid.com --location=project
-pnpm add @revolist/revogrid@4.29.0 @revolist/revogrid-pro@npm:@revolist/rv-pro-trial@4.0.6 @revolist/pivot@npm:@revolist/pivot-trial@4.0.1
+pnpm add @revolist/revogrid@4.31.5 @revolist/revogrid-pro@npm:@revolist/rv-pro-trial@4.0.6 @revolist/pivot@npm:@revolist/pivot-trial@4.0.1
 ```
 
 ### Pro
@@ -43,7 +43,7 @@ packages. Source imports stay unchanged.
 
 ```bash
 pnpm config delete @revolist:registry --location=project
-pnpm add @revolist/revogrid@4.29.0 @revolist/revogrid-pro@4.0.6 @revolist/pivot@4.0.1
+pnpm add @revolist/revogrid@4.31.5 @revolist/revogrid-pro@4.0.6 @revolist/pivot@4.0.1
 ```
 
 ## Chart settings compatibility
