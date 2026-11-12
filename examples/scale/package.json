@@ -14,10 +14,10 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "7.3.1",
-    "@revolist/pivot": "npm:@revolist/pivot-trial@4.0.12",
+    "@revolist/pivot": "npm:@revolist/pivot-trial@4.0.13",
     "@revolist/revogrid": "4.31.5",
-    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@4.0.12",
-    "@revolist/ui": "4.0.12",
+    "@revolist/revogrid-pro": "npm:@revolist/rv-pro-trial@4.0.13",
+    "@revolist/ui": "4.0.13",
     "preact": "10.29.1"
   },
   "devDependencies": {
