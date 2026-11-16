@@ -6,9 +6,9 @@ overrides:
   '@revolist/revogrid': '4.31.5'
 
 minimumReleaseAgeExclude:
-  - '@revolist/pivot-trial@4.0.20'
-  - '@revolist/rv-pro-trial@4.0.20'
-  - '@revolist/ui@4.0.20'
+  - '@revolist/pivot-trial@4.0.25'
+  - '@revolist/rv-pro-trial@4.0.25'
+  - '@revolist/ui@4.0.25'
   - '@revolist/revogrid@4.31.5'
   - '@revolist/angular-datagrid@4.31.5'
   - '@revolist/react-datagrid@4.31.5'
