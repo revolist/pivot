@@ -1,0 +1,52 @@
+/* Shared standalone demo viewport, header and workspace frame. */
+:root { background: #fff; }
+.standalone-demo-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  padding: 20px;
+  color: var(--rv-ui-text, #171717);
+  background: transparent;
+}
+.standalone-demo-shell__heading {
+  display: flex;
+  align-items: center;
+  min-height: 53px;
+  padding: 8px 16px 24px;
+  margin-bottom: -16px;
+  border-radius: 16px 16px 0 0;
+  background: #f8f8f8;
+}
+.standalone-demo-shell__heading h1,
+.standalone-demo-shell__heading p { margin: 0; }
+.standalone-demo-shell__heading h1 {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+.standalone-demo-shell__heading p {
+  color: var(--rv-ui-text-muted, #737373);
+  font-size: 12px;
+  line-height: 17px;
+}
+.standalone-demo-shell__body {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: clip;
+  border: 1px solid var(--rv-ui-border, #e4e4e4);
+  border-radius: 16px;
+  background: var(--rv-ui-surface, #fff);
+}
+.standalone-demo-shell #app {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+}
+@media (prefers-color-scheme: dark) {
+  :root { background: #111827; }
+  .standalone-demo-shell__heading { background: var(--rv-ui-surface-sunken, #171717); }
+}
